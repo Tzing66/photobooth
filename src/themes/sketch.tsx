@@ -2,7 +2,7 @@
 // constant "boil" so every line jitters like frame-by-frame animation.
 
 import type { ReactNode } from "react";
-import type { ThemeKit } from "./types";
+import type { ThemeKit, ToggleProps } from "./types";
 import { ArrowDown, BackIcon, EXT, STEPS, ScissorsIcon, Svg, useBoil } from "./shared";
 
 const INK = "#1d1d1f";
@@ -199,8 +199,8 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
           <button
             onClick={onClick}
             aria-label={label ?? "button"}
-            className={`h-9 w-9 rounded-full border-[2.5px] transition-transform active:scale-90 md:h-11 md:w-11 ${go ? "animate-pulse" : ""}`}
-            style={{ borderColor: INK, background: go ? "var(--t-go)" : "var(--t-stop)" }}
+            className={`h-9 w-9 rounded-full border-[2.5px] transition-transform active:scale-90 md:h-11 md:w-11 ${go ? "press-me" : ""}`}
+            style={{ borderColor: INK, background: go ? "var(--t-go)" : "var(--t-stop)", ["--ring" as string]: INK }}
           />
         </div>
       </Boil>
@@ -208,19 +208,19 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function FilterToggle({ color, onToggle }: { color: boolean; onToggle: () => void }) {
+function Toggle({ on: color, onToggle, left, right, label }: ToggleProps) {
   return (
     <div className="flex items-center gap-3 text-lg font-bold md:text-xl">
-      <span className={color ? "opacity-40" : ""}>b&w</span>
+      <span className={color ? "opacity-40" : ""}>{left}</span>
       <Boil>
-        <button onClick={onToggle} aria-label="Toggle colour mode" className="relative h-8 w-16 rounded-full border-[2.5px] bg-white" style={{ borderColor: INK }}>
+        <button onClick={onToggle} aria-label={label} className="relative h-8 w-16 rounded-full border-[2.5px] bg-white" style={{ borderColor: INK }}>
           <span
             className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-[2.5px] transition-all duration-300"
             style={{ borderColor: INK, left: color ? "calc(100% - 1.7rem)" : "2px", background: color ? "linear-gradient(135deg,#ef4b3f,#ffe45c,#2f5bff)" : INK }}
           />
         </button>
       </Boil>
-      <span className={color ? "" : "opacity-40"}>color</span>
+      <span className={color ? "" : "opacity-40"}>{right}</span>
     </div>
   );
 }
@@ -294,7 +294,7 @@ export const sketch: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  FilterToggle,
+  Toggle,
   PrintTimer,
   PickupSlot,
   Note,

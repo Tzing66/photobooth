@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { isColorMode, setColorMode } from "../lib/frames";
+import { isAuthentic, isColorMode, setAuthentic, setColorMode } from "../lib/frames";
 import { useTheme } from "../themes/ThemeContext";
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
   /** Green = ready to press, red = idle/disabled. */
   actionReady?: boolean;
   onAction?: () => void;
-  onColorChange?: (color: boolean) => void;
+  onSettingsChange?: (s: { color: boolean; authentic: boolean }) => void;
 }
 
 /**
@@ -17,15 +17,20 @@ interface Props {
  * level marker, price sticker, b&w/colour toggle, instructions and the coin
  * button that drives each step.
  */
-export default function BoothInterior({ children, actionLabel = null, actionReady = false, onAction, onColorChange }: Props) {
+export default function BoothInterior({ children, actionLabel = null, actionReady = false, onAction, onSettingsChange }: Props) {
   const { kit } = useTheme();
   const [color, setColor] = useState(isColorMode);
+  const [authentic, setAuth] = useState(isAuthentic);
 
-  const toggle = () => {
-    const next = !color;
-    setColor(next);
-    setColorMode(next);
-    onColorChange?.(next);
+  const toggleColor = () => {
+    setColor(!color);
+    setColorMode(!color);
+    onSettingsChange?.({ color: !color, authentic });
+  };
+  const toggleLook = () => {
+    setAuth(!authentic);
+    setAuthentic(!authentic);
+    onSettingsChange?.({ color, authentic: !authentic });
   };
 
   return (
@@ -44,7 +49,10 @@ export default function BoothInterior({ children, actionLabel = null, actionRead
         </div>
       </div>
 
-      <kit.FilterToggle color={color} onToggle={toggle} />
+      <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
+        <kit.Toggle on={color} onToggle={toggleColor} left="b&w" right="color" label="Toggle colour mode" />
+        <kit.Toggle on={authentic} onToggle={toggleLook} left="normal" right="authentic" label="Toggle authentic booth look" />
+      </div>
 
       <div className="flex w-full max-w-md items-end justify-center gap-4 md:max-w-lg">
         <div className="max-w-[16rem] flex-1">

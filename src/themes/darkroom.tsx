@@ -1,7 +1,7 @@
 // Darkroom: black room, safelight-red neon edges, film sprockets, monospace labels.
 
 import type { ReactNode } from "react";
-import type { ThemeKit } from "./types";
+import type { ThemeKit, ToggleProps } from "./types";
 import { ArrowDown, BackIcon, EXT, STEPS, ScissorsIcon, Svg } from "./shared";
 
 const RED = "#ff3b2f";
@@ -203,12 +203,12 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
         <button
           onClick={onClick}
           aria-label={label ?? "button"}
-          className="h-10 w-10 rounded-full border-2 transition-all active:scale-90 md:h-12 md:w-12"
+          className={`h-10 w-10 rounded-full border-2 transition-all active:scale-90 md:h-12 md:w-12 ${go ? "press-me" : ""}`}
           style={{
             borderColor: go ? RED : DIM,
             background: go ? `radial-gradient(circle, ${RED} 30%, #7a140d)` : "#1a0d0c",
             boxShadow: go ? `0 0 18px ${RED}` : "none",
-            animation: go ? "flicker 2.5s linear infinite" : undefined,
+            ["--ring" as string]: RED,
           }}
         />
       </div>
@@ -216,14 +216,14 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function FilterToggle({ color, onToggle }: { color: boolean; onToggle: () => void }) {
+function Toggle({ on: color, onToggle, left, right, label }: ToggleProps) {
   return (
-    <button onClick={onToggle} aria-label="Toggle colour mode" className="flex items-center border text-[11px] tracking-[0.25em] md:text-xs" style={{ borderColor: RED, ...glow(8) }}>
+    <button onClick={onToggle} aria-label={label} className="flex items-center border text-[11px] tracking-[0.25em] md:text-xs" style={{ borderColor: RED, ...glow(8) }}>
       <span className="px-3 py-1.5 transition-colors" style={{ background: color ? "transparent" : RED, color: color ? RED : BLACK }}>
-        B&W
+        {left.toUpperCase()}
       </span>
       <span className="px-3 py-1.5 transition-colors" style={{ background: color ? RED : "transparent", color: color ? BLACK : RED }}>
-        C-41
+        {right.toUpperCase()}
       </span>
     </button>
   );
@@ -287,7 +287,7 @@ export const darkroom: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  FilterToggle,
+  Toggle,
   PrintTimer,
   PickupSlot,
   Note,
