@@ -41,7 +41,7 @@ export default function Home() {
       console.error("Failed to clear previous session", e);
     }
     resetSettings();
-    navigate("/frameSelection");
+    navigate("/setup");
   };
 
   return (
