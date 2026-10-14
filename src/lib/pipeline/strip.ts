@@ -4,7 +4,9 @@
 // Spacing, photo placement and edge burn are all randomised a little on
 // every print so each strip looks hand-assembled.
 
-import { type FrameType, frameDef } from "../frames";
+import { type BackdropType, type FrameType, frameDef } from "../frames";
+import { castsShadow, paintBackdrop } from "./backdrops";
+import { personMask } from "./segment";
 import { blackAndWhite, bloom, dust, edgeBurn, filmColor, flashGlow, harshFlash, heavyGrain, soften } from "./effects";
 import { drawOverlay, ensureOverlayFonts, type Cell } from "./overlays";
 import { applyTexture, randomTexture } from "./textures";
@@ -62,13 +64,61 @@ interface Look {
   color: boolean;
   authentic: boolean;
   texture: HTMLCanvasElement;
+  backdrop: BackdropType;
+}
+
+function alphaCanvas(w: number, h: number) {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  return { c, ctx: c.getContext("2d")! };
+}
+
+/**
+ * Backdrop, then a soft flash shadow on plain walls, then the cut-out person.
+ * `mask` is the person mask for the whole source image; it's cropped exactly
+ * like the photo so the two line up.
+ */
+function placeOnBackdrop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, mask: HTMLCanvasElement, w: number, h: number, backdrop: BackdropType) {
+  const [sx, sy, sw, sh] = coverCrop(img, w / h);
+  const kx = mask.width / img.width;
+  const ky = mask.height / img.height;
+  const m = alphaCanvas(w, h);
+  m.ctx.imageSmoothingQuality = "high";
+  m.ctx.drawImage(mask, sx * kx, sy * ky, sw * kx, sh * ky, 0, 0, w, h);
+
+  paintBackdrop(ctx, backdrop, w, h);
+
+  if (castsShadow(backdrop)) {
+    // Flash sits just above the lens, so the shadow drops down and to the side.
+    const k = 0.08;
+    const small = alphaCanvas(Math.round(w * k), Math.round(h * k));
+    small.ctx.drawImage(m.c, 0, 0, small.c.width, small.c.height);
+    small.ctx.globalCompositeOperation = "source-in";
+    small.ctx.fillStyle = "#000";
+    small.ctx.fillRect(0, 0, small.c.width, small.c.height);
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(small.c, w * 0.035, h * 0.025, w, h);
+    ctx.restore();
+  }
+
+  const person = alphaCanvas(w, h);
+  person.ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  person.ctx.globalCompositeOperation = "destination-in";
+  person.ctx.drawImage(m.c, 0, 0);
+  ctx.drawImage(person.c, 0, 0);
 }
 
 /** Render one developed photo of size w×h. */
-function develop(img: HTMLImageElement, w: number, h: number, { paper, color, authentic, texture }: Look) {
+function develop(img: HTMLImageElement, w: number, h: number, { paper, color, authentic, texture, backdrop }: Look, mask?: HTMLCanvasElement) {
   const { c, ctx } = canvas(w, h);
-  const [sx, sy, sw, sh] = coverCrop(img, w / h);
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  if (mask && backdrop !== "none") placeOnBackdrop(ctx, img, mask, w, h, backdrop);
+  else {
+    const [sx, sy, sw, sh] = coverCrop(img, w / h);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  }
   if (authentic) {
     soften(ctx, w, h);
     harshFlash(ctx, w, h);
@@ -102,6 +152,8 @@ function drawCaption(ctx: CanvasRenderingContext2D, text: string, x: number, y: 
 export interface StripResult {
   strip: string;
   singles: string[];
+  /** Strip size and photo positions, for zooming into a cell in previews. */
+  layout: { width: number; height: number; cells: Cell[] };
 }
 
 export interface StripOptions {
@@ -109,11 +161,13 @@ export interface StripOptions {
   color: boolean;
   /** Harsh close-flash booth look (see effects.ts). */
   authentic?: boolean;
+  /** Replace the real background behind the person. */
+  backdrop?: BackdropType;
   /** Skip the four single prints (used when rendering frame previews). */
   stripOnly?: boolean;
 }
 
-export async function createPhotostrip(images: string[], { frame, color, authentic = false, stripOnly }: StripOptions): Promise<StripResult> {
+export async function createPhotostrip(images: string[], { frame, color, authentic = false, backdrop = "none", stripOnly }: StripOptions): Promise<StripResult> {
   if (images.length !== 4 || images.some((i) => !i)) throw new Error("Invalid images array");
 
   const def = frameDef(frame);
@@ -124,6 +178,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
   if (def.overlay) await ensureOverlayFonts();
 
   const loaded = await Promise.all(images.map((src, i) => loadImage(src, `image ${i}`)));
+  const masks = backdrop === "none" ? [] : await Promise.all(loaded.map(personMask));
 
   // --- layout ---
   const gap = randInt(5, 10) * S + (captioned ? 20 * S : 0) + (extra.gap ?? 0) * S;
@@ -140,7 +195,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
 
   const photoTexture = randomTexture();
   const paperTexture = randomTexture();
-  const look: Look = { paper, color, authentic, texture: photoTexture };
+  const look: Look = { paper, color, authentic, texture: photoTexture, backdrop };
   applyTexture(ctx, paperTexture, 0, 0, width, height, 0.1, true);
 
   const cells: Cell[] = [];
@@ -148,7 +203,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
     const x = side;
     const y = top + i * (CELL_H + gap);
     cells.push({ x, y, w: CELL_W, h: CELL_H });
-    ctx.drawImage(develop(img, CELL_W, CELL_H, look), x + nudge(), y + nudge());
+    ctx.drawImage(develop(img, CELL_W, CELL_H, look, masks[i]), x + nudge(), y + nudge());
   });
 
   if (def.caption) {
@@ -162,11 +217,11 @@ export async function createPhotostrip(images: string[], { frame, color, authent
   dust(ctx, width, height);
   if (def.overlay) drawOverlay(ctx, frame, { width, height, cells, s: S });
 
-  const result: StripResult = { strip: strip.toDataURL("image/png"), singles: [] };
+  const result: StripResult = { strip: strip.toDataURL("image/png"), singles: [], layout: { width, height, cells } };
   if (stripOnly) return result;
 
   // --- single prints ---
-  for (const img of loaded) {
+  for (const [i, img] of loaded.entries()) {
     const margin = randInt(7, 9) * S;
     const jx = nudge();
     const jy = nudge();
@@ -185,7 +240,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
     const ph = SINGLE_H - 2 * margin;
     const shiftX = Math.min(margin / 2, Math.abs(jx)) * Math.sign(jx || -1);
     const shiftY = Math.min(margin / 2, Math.abs(jy)) * Math.sign(jy || -1);
-    sctx.drawImage(develop(img, pw, ph, look), margin + sideExtra + shiftX, margin + captionSpace + shiftY);
+    sctx.drawImage(develop(img, pw, ph, look, masks[i]), margin + sideExtra + shiftX, margin + captionSpace + shiftY);
     dust(sctx, w, h);
     if (def.caption) drawCaption(sctx, def.caption, w / 2, captionSpace / 2 + 5 * S, 25 * S);
     result.singles.push(single.toDataURL("image/png"));
