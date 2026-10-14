@@ -1,8 +1,10 @@
 # Photobooth
 
+**Use it here: https://tzing66.github.io/photobooth/**
+
 A personal, browser-only vintage photobooth. You take four photos with a phone or laptop camera, or upload four, and get back a developed photostrip. Everything runs client-side, so no photo ever leaves your device.
 
-Functionality mirrors [mysketchbooth.com](https://mysketchbooth.com). The booth itself has six switchable looks: **Retro ’70s**, **Sketchbook**, **Darkroom**, **Pixel Arcade**, **Photo Boy** and **Hello Kitty & Friends**. Cycle them with the button in the bottom-right corner.
+Inspired by [mysketchbooth.com](https://mysketchbooth.com).
 
 ## Run it
 
