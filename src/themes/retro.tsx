@@ -1,7 +1,7 @@
 // Retro 70s: cream enamel cabinet, chrome trim, red velvet curtain, marquee bulbs.
 
 import type { ReactNode } from "react";
-import type { ThemeKit } from "./types";
+import type { ThemeKit, ToggleProps } from "./types";
 import { ArrowDown, BackIcon, EXT, STEPS, ScissorsIcon, Svg, perimeter } from "./shared";
 
 const INK = "#3a1f12";
@@ -86,7 +86,7 @@ function ExteriorArt() {
         4 poses
       </text>
       <text x="85" y="286" textAnchor="middle" fontFamily="Courier Prime" fontWeight="700" fontSize="8" fill={INK}>
-        ONLY 25¢
+        1 STRIP
       </text>
 
       {/* coin slot */}
@@ -180,11 +180,11 @@ function PriceSticker() {
   return (
     <Svg viewBox="0 0 90 90" className="w-full -rotate-12">
       <polygon points={pts} fill={RED} stroke={INK} strokeWidth="2.5" />
-      <text x="45" y="42" textAnchor="middle" fontFamily="Shrikhand" fontSize="17" fill={CREAM}>
-        4 for
+      <text x="45" y="47" textAnchor="middle" fontFamily="Shrikhand" fontSize="28" fill={CREAM}>
+        4
       </text>
-      <text x="45" y="61" textAnchor="middle" fontFamily="Shrikhand" fontSize="19" fill={MUSTARD}>
-        25¢
+      <text x="45" y="62" textAnchor="middle" fontFamily="Shrikhand" fontSize="13" fill={MUSTARD}>
+        poses!
       </text>
     </Svg>
   );
@@ -224,11 +224,11 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
         <button
           onClick={onClick}
           aria-label={label ?? "button"}
-          className="h-9 w-9 rounded-full border-[3px] transition-transform active:scale-90 md:h-11 md:w-11"
+          className={`h-9 w-9 rounded-full border-[3px] transition-transform active:scale-90 md:h-11 md:w-11 ${go ? "press-me" : ""}`}
           style={{
             borderColor: INK,
             background: `radial-gradient(circle at 35% 30%, ${go ? "#9be89f" : "#ff9a84"}, ${go ? "#2e9b3a" : "#b3241a"} 70%)`,
-            animation: go ? "bulb 1.4s ease-in-out infinite" : undefined,
+            ["--ring" as string]: "#2e9b3a",
           }}
         />
         <span className="text-[8px] font-bold tracking-widest" style={{ color: INK }}>
@@ -239,13 +239,13 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function FilterToggle({ color, onToggle }: { color: boolean; onToggle: () => void }) {
+function Toggle({ on: color, onToggle, left, right, label }: ToggleProps) {
   return (
     <div className="flex items-center gap-3 font-bold uppercase tracking-wider text-sm md:text-base">
-      <span className={color ? "opacity-50" : ""}>b&w</span>
+      <span className={color ? "opacity-50" : ""}>{left}</span>
       <button
         onClick={onToggle}
-        aria-label="Toggle colour mode"
+        aria-label={label}
         className="relative h-7 w-14 rounded-full border-[3px] md:h-8 md:w-16"
         style={{ borderColor: INK, background: color ? `linear-gradient(90deg, ${RED}, ${ORANGE}, ${MUSTARD})` : "#5b4636" }}
       >
@@ -254,7 +254,7 @@ function FilterToggle({ color, onToggle }: { color: boolean; onToggle: () => voi
           style={{ borderColor: INK, left: color ? "calc(100% - 1.6rem)" : "-2px", background: "linear-gradient(180deg,#fdfdfd,#b8b8b8 45%,#f0f0f0 55%,#8a8a8a)" }}
         />
       </button>
-      <span className={color ? "" : "opacity-50"}>color</span>
+      <span className={color ? "" : "opacity-50"}>{right}</span>
     </div>
   );
 }
@@ -321,7 +321,7 @@ export const retro: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  FilterToggle,
+  Toggle,
   PrintTimer,
   PickupSlot,
   Note,
