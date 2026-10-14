@@ -6,7 +6,7 @@ export default function ThemeSwitcher() {
   return (
     <button
       onClick={cycle}
-      className="btn fixed right-3 bottom-3 z-40 h-10 w-10 p-0! text-xs! sm:h-auto sm:w-auto sm:px-3! sm:py-1.5! md:right-5 md:bottom-5"
+      className="btn fixed right-3 bottom-3 z-40 h-10 w-10 p-0! text-xs! sm:h-auto sm:w-auto sm:px-3! sm:py-1.5! md:top-5 md:right-5 md:bottom-auto"
       title="Switch booth theme"
       aria-label={`Theme: ${kit.label}. Switch theme`}
     >
