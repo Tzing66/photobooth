@@ -50,11 +50,29 @@ export const FRAMES: FrameDef[] = [
   { type: "pressed", name: "Pressed Flowers", background: "#ebe5d5", overlay: true, pad: { side: 10, gap: 6 } },
 ];
 
+export type BackdropType = "none" | "white" | "grey" | "black" | "curtain";
+
+export interface BackdropDef {
+  type: BackdropType;
+  name: string;
+  /** CSS background for the picker swatch. */
+  swatch: string;
+}
+
+export const BACKDROPS: BackdropDef[] = [
+  { type: "none", name: "Your room", swatch: "repeating-linear-gradient(45deg,#c9c4bb 0 4px,#e9e5dd 4px 8px)" },
+  { type: "white", name: "White wall", swatch: "radial-gradient(circle at 50% 40%,#fbfaf7,#d6d2ca)" },
+  { type: "grey", name: "Studio grey", swatch: "radial-gradient(circle at 50% 40%,#a9a7a2,#6f6d69)" },
+  { type: "black", name: "Black", swatch: "radial-gradient(circle at 50% 40%,#2a2928,#070707)" },
+  { type: "curtain", name: "Velvet curtain", swatch: "repeating-linear-gradient(90deg,#5a0f12 0 3px,#a8242a 3px 9px,#5a0f12 9px 12px)" },
+];
+
 export const frameDef = (t: FrameType) => FRAMES.find((f) => f.type === t) ?? FRAMES[0];
 
 const FRAME_KEY = "photobooth_frame";
 const FILTER_KEY = "photobooth_filter";
 const LOOK_KEY = "photobooth_look";
+const BACKDROP_KEY = "photobooth_backdrop";
 
 export function getFrame(): FrameType {
   const v = localStorage.getItem(FRAME_KEY);
@@ -70,10 +88,17 @@ export const setColorMode = (color: boolean) => localStorage.setItem(FILTER_KEY,
 export const isAuthentic = () => localStorage.getItem(LOOK_KEY) === "authentic";
 export const setAuthentic = (on: boolean) => localStorage.setItem(LOOK_KEY, on ? "authentic" : "normal");
 
+export function getBackdrop(): BackdropType {
+  const v = localStorage.getItem(BACKDROP_KEY);
+  return BACKDROPS.some((b) => b.type === v) ? (v as BackdropType) : "none";
+}
+export const setBackdrop = (t: BackdropType) => localStorage.setItem(BACKDROP_KEY, t);
+
 export function resetSettings() {
   localStorage.removeItem(FRAME_KEY);
   localStorage.removeItem(FILTER_KEY);
   localStorage.removeItem(LOOK_KEY);
+  localStorage.removeItem(BACKDROP_KEY);
 }
 
 /** Strips on light paper get a drop shadow when displayed; black ones don't. */
