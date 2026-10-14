@@ -20,6 +20,7 @@ export interface StripLayout {
 }
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
+const randInt = (a: number, b: number) => Math.floor(rand(a, b + 1));
 
 // --- shapes -----------------------------------------------------------------
 
@@ -295,11 +296,302 @@ function cutout(ctx: Ctx, L: StripLayout) {
   }
 }
 
+
+// --- artsy / indie frames ------------------------------------------------------
+
+const MONO = '"Space Mono", ui-monospace, monospace';
+const HAND = '"Gaegu", "Comic Sans MS", cursive';
+const TYPE = '"Courier Prime", "Courier New", monospace';
+const SANS = '"Archivo", sans-serif';
+
+/** Fonts the overlays draw with; awaited before rendering so canvas text isn't a fallback. */
+export async function ensureOverlayFonts() {
+  await Promise.all(
+    [`700 20px ${MONO}`, `700 20px ${HAND}`, `700 20px ${TYPE}`, `700 20px ${SANS}`].map((f) => document.fonts.load(f).catch(() => null)),
+  );
+}
+
+function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function text(ctx: Ctx, str: string, x: number, y: number, font: string, fill: string, align: CanvasTextAlign = "center", rot = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.font = font;
+  ctx.fillStyle = fill;
+  ctx.textAlign = align;
+  ctx.textBaseline = "middle";
+  ctx.fillText(str, 0, 0);
+  ctx.restore();
+}
+
+const today = () => {
+  const d = new Date();
+  return { yy: String(d.getFullYear()).slice(2), mm: String(d.getMonth() + 1).padStart(2, "0"), dd: String(d.getDate()).padStart(2, "0"), d };
+};
+
+/** 35mm negative: sprocket holes down both edges, edge print and frame numbers. */
+function negative(ctx: Ctx, L: StripLayout) {
+  const s = L.s;
+  const margin = L.cells[0].x;
+  const holeW = 9 * s;
+  const holeH = 6 * s;
+  const inset = 5 * s;
+  ctx.fillStyle = "#ece6d8";
+  for (let y = 4 * s; y < L.height - holeH; y += 13 * s) {
+    roundRect(ctx, inset, y, holeW, holeH, 1.5 * s);
+    ctx.fill();
+    roundRect(ctx, L.width - inset - holeW, y, holeW, holeH, 1.5 * s);
+    ctx.fill();
+  }
+  const amber = "#e39a2d";
+  const colL = inset + holeW + (margin - inset - holeW) / 2;
+  const colR = L.width - colL;
+  for (let y = 70 * s; y < L.height; y += 150 * s) text(ctx, "SAFETY FILM 400", colL, y, `700 ${6 * s}px ${MONO}`, amber, "center", -Math.PI / 2);
+  const n0 = randInt(6, 30);
+  L.cells.forEach((c, i) => {
+    text(ctx, `${n0 + i}`, colR, c.y + c.h / 2, `700 ${7 * s}px ${MONO}`, amber, "center", Math.PI / 2);
+    text(ctx, `▸${n0 + i}A`, colR, c.y + 14 * s, `700 ${5 * s}px ${MONO}`, amber, "center", Math.PI / 2);
+  });
+}
+
+/** Photographer's contact sheet: frame numbers, a grease-pencil circle and an X. */
+function contact(ctx: Ctx, L: StripLayout) {
+  const s = L.s;
+  const n0 = randInt(4, 30);
+  L.cells.forEach((c, i) => {
+    text(ctx, `${n0 + i}  ▸ ${n0 + i}A`, c.x + 2 * s, c.y + c.h + 9 * s, `700 ${6 * s}px ${MONO}`, "#d8d4c8", "left");
+    text(ctx, "SAFETY FILM", c.x + c.w - 2 * s, c.y + c.h + 9 * s, `700 ${5 * s}px ${MONO}`, "#8d887d", "right");
+  });
+
+  const grease = "#ff4b1f";
+  const keep = randInt(0, 3);
+  const c = L.cells[keep];
+  ctx.save();
+  ctx.strokeStyle = grease;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.globalAlpha = 0.88;
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.lineWidth = (3.4 - pass) * s;
+    ctx.beginPath();
+    const cx = c.x + c.w / 2 + rand(-4, 4) * s;
+    const cy = c.y + c.h / 2 + rand(-4, 4) * s;
+    const start = rand(0, Math.PI * 2);
+    for (let t = 0; t <= Math.PI * 2 + 0.5; t += 0.08) {
+      const wob = 1 + Math.sin(t * 3 + pass) * 0.025 + rand(-0.006, 0.006);
+      const x = cx + Math.cos(start + t) * c.w * 0.5 * wob;
+      const y = cy + Math.sin(start + t) * c.h * 0.5 * wob;
+      if (t === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+  text(ctx, "keeper!", c.x + c.w - 40 * s, c.y + c.h - 16 * s, `700 ${22 * s}px ${HAND}`, grease, "center", -0.18);
+
+  const other = (keep + randInt(1, 3)) % 4;
+  const o = L.cells[other];
+  inkStroke(ctx, grease, 3 * s, () => {
+    const x = o.x + o.w - 26 * s;
+    const y = o.y + 12 * s;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 16 * s, y + 16 * s);
+    ctx.moveTo(x + 16 * s, y);
+    ctx.lineTo(x, y + 16 * s);
+  }, 1);
+}
+
+/** Disposable camera: glowing orange date stamp in each frame. */
+function disposable(ctx: Ctx, L: StripLayout) {
+  const s = L.s;
+  const { yy, mm, dd } = today();
+  const stamp = `'${yy} ${mm} ${dd}`;
+  for (const c of L.cells) {
+    ctx.save();
+    ctx.shadowColor = "#ff5a00";
+    ctx.shadowBlur = 6 * s;
+    ctx.globalAlpha = 0.92;
+    text(ctx, stamp, c.x + c.w - 10 * s, c.y + c.h - 12 * s, `700 ${12 * s}px ${MONO}`, "#ff9a2e", "right");
+    ctx.restore();
+  }
+  text(ctx, "SINGLE-USE CAMERA · 27 EXP · ISO 400", L.width / 2, L.height - 11 * s, `700 ${6 * s}px ${SANS}`, "#8a857b");
+}
+
+function tape(ctx: Ctx, x: number, y: number, angle: number, s: number) {
+  const w = 74 * s;
+  const h = 19 * s;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  const teeth = 4;
+  ctx.moveTo(-w / 2, -h / 2);
+  ctx.lineTo(w / 2, -h / 2);
+  for (let i = 1; i <= teeth; i++) ctx.lineTo(w / 2 + (i % 2 ? 2 * s : 0), -h / 2 + (h * i) / teeth);
+  ctx.lineTo(-w / 2, h / 2);
+  for (let i = teeth - 1; i >= 0; i--) ctx.lineTo(-w / 2 - (i % 2 ? 2 * s : 0), -h / 2 + (h * i) / teeth);
+  ctx.closePath();
+  ctx.shadowColor = "rgba(60,40,20,0.25)";
+  ctx.shadowBlur = 3 * s;
+  ctx.fillStyle = "rgba(240,230,198,0.8)";
+  ctx.fill();
+  ctx.restore();
+}
+
+/** Kraft-paper scrapbook page: fibres, masking tape on the corners, a handwritten date. */
+function scrapbook(ctx: Ctx, L: StripLayout) {
+  const s = L.s;
+  ctx.save();
+  ctx.lineCap = "round";
+  const inPhoto = (x: number, y: number) => L.cells.some((c) => x > c.x && x < c.x + c.w && y > c.y && y < c.y + c.h);
+  for (let i = 0; i < 420; i++) {
+    const x = rand(0, L.width);
+    const y = rand(0, L.height);
+    if (inPhoto(x, y)) continue;
+    ctx.strokeStyle = Math.random() < 0.5 ? "rgba(255,245,225,0.22)" : "rgba(80,50,20,0.18)";
+    ctx.lineWidth = rand(0.4, 1.1) * s;
+    const a = rand(0, Math.PI);
+    const len = rand(3, 9) * s;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // Taped along the top corners only, so neighbouring photos' tape never collides.
+  for (const c of L.cells) {
+    tape(ctx, c.x + 12 * s, c.y + 8 * s, -0.7 + rand(-0.12, 0.12), s);
+    tape(ctx, c.x + c.w - 12 * s, c.y + 8 * s, 0.7 + rand(-0.12, 0.12), s);
+  }
+  const { d } = today();
+  const label = `${d.toLocaleString("en", { month: "short" }).toLowerCase()} '${String(d.getFullYear()).slice(2)} ♡`;
+  text(ctx, label, L.width / 2, L.height - 15 * s, `700 ${22 * s}px ${HAND}`, "#4a3420", "center", -0.04);
+}
+
+/** Old cinema ticket: border, ADMIT ONE header, perforations and a serial number. */
+function ticket(ctx: Ctx, L: StripLayout) {
+  const s = L.s;
+  const red = "#b0412e";
+  const first = L.cells[0];
+  const last = L.cells[L.cells.length - 1];
+  ctx.save();
+  ctx.strokeStyle = red;
+  ctx.lineWidth = 1.2 * s;
+  ctx.strokeRect(4 * s, 4 * s, L.width - 8 * s, L.height - 8 * s);
+  ctx.lineWidth = 0.6 * s;
+  ctx.strokeRect(6.5 * s, 6.5 * s, L.width - 13 * s, L.height - 13 * s);
+  ctx.restore();
+
+  const perf = (y: number) => {
+    ctx.fillStyle = "rgba(120,90,60,0.55)";
+    for (let x = 10 * s; x < L.width - 8 * s; x += 5 * s) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.1 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+  perf(first.y - 6 * s);
+  perf(last.y + last.h + 6 * s);
+
+  text(ctx, "★ PHOTO BOOTH ★", L.width / 2, first.y / 2 - 9 * s, `700 ${6 * s}px ${TYPE}`, red);
+  text(ctx, "ADMIT ONE", L.width / 2, first.y / 2 + 5 * s, `700 ${17 * s}px ${SANS}`, red);
+  const bottomMid = (last.y + last.h + L.height) / 2;
+  text(ctx, `Nº ${String(randInt(1, 999999)).padStart(6, "0")}`, L.width / 2, bottomMid - 4 * s, `700 ${11 * s}px ${TYPE}`, red);
+  text(ctx, "KEEP THIS COUPON", L.width / 2, bottomMid + 8 * s, `700 ${5 * s}px ${TYPE}`, "rgba(120,90,60,0.8)");
+}
+
+/** A pressed sprig: curved stem, alternating leaves and a small flower. */
+function sprig(ctx: Ctx, x: number, y: number, angle: number, len: number, s: number, petal: string) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.shadowColor = "rgba(0,0,0,0.22)";
+  ctx.shadowBlur = 3 * s;
+  ctx.shadowOffsetY = s;
+  const bend = len * 0.18;
+  const pt = (t: number) => ({ x: len * t, y: bend * 4 * t * (1 - t) });
+  ctx.strokeStyle = "#5f6f4c";
+  ctx.lineWidth = 1.3 * s;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(len / 2, bend * 2, len, 0);
+  ctx.stroke();
+  for (let t = 0.16, side = 1; t < 0.9; t += 0.1, side *= -1) {
+    const p = pt(t);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(side * 0.9 - 0.25);
+    ctx.fillStyle = side > 0 ? "#7d8f69" : "#93a37c";
+    ctx.beginPath();
+    ctx.ellipse(8 * s, 0, 10 * s, 3.6 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(60,70,45,0.6)";
+    ctx.lineWidth = 0.5 * s;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(17 * s, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.translate(len, 0);
+  ctx.scale(1.5, 1.5);
+  ctx.fillStyle = petal;
+  for (let i = 0; i < 5; i++) {
+    ctx.save();
+    ctx.rotate((i * Math.PI * 2) / 5);
+    ctx.beginPath();
+    ctx.ellipse(5 * s, 0, 5 * s, 3.2 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = "#c9a43b";
+  ctx.beginPath();
+  ctx.arc(0, 0, 2.3 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** Cream paper with pressed botanicals tucked over the photo corners. */
+function pressed(ctx: Ctx, L: StripLayout) {
+  const s = L.s;
+  const petals = ["#c98b8b", "#d9a7a0", "#b9a2c4", "#e0c27a"];
+  L.cells.forEach((c, i) => {
+    const petal = petals[(i + randInt(0, 3)) % petals.length];
+    if (i % 2 === 0) sprig(ctx, c.x - 4 * s, c.y + c.h - 4 * s, -0.9 + rand(-0.15, 0.15), rand(78, 96) * s, s, petal);
+    else sprig(ctx, c.x + c.w + 4 * s, c.y + 4 * s, Math.PI - 0.9 + rand(-0.15, 0.15), rand(78, 96) * s, s, petal);
+  });
+  // a few loose petals
+  for (let i = 0; i < 6; i++) {
+    ctx.fillStyle = petals[i % petals.length];
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.ellipse(rand(0, L.width), rand(0, L.height), 3.5 * s, 2 * s, rand(0, Math.PI), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
 const OVERLAYS: Partial<Record<FrameType, (ctx: Ctx, L: StripLayout) => void>> = {
   stars,
   hearts,
   doodle,
   cutout,
+  negative,
+  contact,
+  disposable,
+  scrapbook,
+  ticket,
+  pressed,
 };
 
 export function drawOverlay(ctx: Ctx, frame: FrameType, layout: StripLayout) {

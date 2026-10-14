@@ -10,7 +10,13 @@ export type FrameType =
   | "birthday"
   | "branded"
   | "stars"
-  | "doodle";
+  | "doodle"
+  | "negative"
+  | "contact"
+  | "disposable"
+  | "scrapbook"
+  | "ticket"
+  | "pressed";
 
 export interface FrameDef {
   type: FrameType;
@@ -21,6 +27,8 @@ export interface FrameDef {
   caption?: string;
   /** Drawn over the finished strip (stars, hearts, ...). */
   overlay?: boolean;
+  /** Extra margin (in strip units, 1 unit = 2px) for overlays that need room. */
+  pad?: { top?: number; bottom?: number; side?: number; gap?: number };
 }
 
 export const FRAMES: FrameDef[] = [
@@ -34,12 +42,19 @@ export const FRAMES: FrameDef[] = [
   { type: "branded", name: "Photobooth", background: "#d5d1cc", caption: "PHOTOBOOTH · EST. 2026" },
   { type: "stars", name: "Stars", background: "black", overlay: true },
   { type: "doodle", name: "Doodles", background: "#d5d1cc", overlay: true },
+  { type: "negative", name: "Film Negative", background: "#15120f", overlay: true, pad: { side: 30, top: 6, bottom: 6 } },
+  { type: "contact", name: "Contact Sheet", background: "#0f0f0f", overlay: true, pad: { gap: 12, bottom: 14, top: 4 } },
+  { type: "disposable", name: "Disposable", background: "#f1eee6", overlay: true, pad: { bottom: 18 } },
+  { type: "scrapbook", name: "Scrapbook", background: "#c6a47c", overlay: true, pad: { side: 6, gap: 8, bottom: 24, top: 6 } },
+  { type: "ticket", name: "Ticket Stub", background: "#efe3c8", overlay: true, pad: { top: 34, bottom: 36, side: 8 } },
+  { type: "pressed", name: "Pressed Flowers", background: "#ebe5d5", overlay: true, pad: { side: 10, gap: 6 } },
 ];
 
 export const frameDef = (t: FrameType) => FRAMES.find((f) => f.type === t) ?? FRAMES[0];
 
 const FRAME_KEY = "photobooth_frame";
 const FILTER_KEY = "photobooth_filter";
+const LOOK_KEY = "photobooth_look";
 
 export function getFrame(): FrameType {
   const v = localStorage.getItem(FRAME_KEY);
@@ -51,9 +66,14 @@ export const setFrame = (t: FrameType) => localStorage.setItem(FRAME_KEY, t);
 export const isColorMode = () => localStorage.getItem(FILTER_KEY) === "color";
 export const setColorMode = (color: boolean) => localStorage.setItem(FILTER_KEY, color ? "color" : "bw");
 
+/** "authentic" = harsh close-flash booth exposure; "normal" is the default. */
+export const isAuthentic = () => localStorage.getItem(LOOK_KEY) === "authentic";
+export const setAuthentic = (on: boolean) => localStorage.setItem(LOOK_KEY, on ? "authentic" : "normal");
+
 export function resetSettings() {
   localStorage.removeItem(FRAME_KEY);
   localStorage.removeItem(FILTER_KEY);
+  localStorage.removeItem(LOOK_KEY);
 }
 
 /** Strips on light paper get a drop shadow when displayed; black ones don't. */
