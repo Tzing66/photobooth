@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BoothInterior from "../components/BoothInterior";
+import LookHere from "../components/LookHere";
 import { showError } from "../lib/errors";
 import { clearAllPhotos, clearPhotostrip, isComplete, savePhoto, type Photos } from "../lib/storage";
 
@@ -161,7 +162,8 @@ export default function TakePicture() {
   const taken = photos.filter(Boolean).length;
 
   return (
-    <BoothInterior actionLabel={canStart ? "start" : null} actionReady={canStart} onAction={canStart ? start : undefined}>
+    <BoothInterior actionLabel={canStart ? "start" : null} actionReady={canStart} onAction={canStart ? start : undefined} locked={shooting}>
+      <LookHere show={shooting} />
       <div className="relative h-full w-full bg-black">
         {!ready && <div className="absolute inset-0 z-10 grid place-items-center bg-[#ece8e1] text-center text-sm text-[#2a2a2a]">Initializing camera...</div>}
         <video ref={videoRef} autoPlay playsInline muted disablePictureInPicture className="h-full w-full -scale-x-100 object-cover" />
