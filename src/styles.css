@@ -64,22 +64,56 @@
     radial-gradient(ellipse 60% 40% at 50% 110%, rgba(255, 40, 25, 0.1), transparent 70%);
 }
 
-[data-theme="y2k"] {
-  --t-display: "Fredoka", "Arial Rounded MT Bold", sans-serif;
-  --t-body: "Fredoka", "Arial Rounded MT Bold", sans-serif;
-  --t-fg: #5b2a86;
-  --t-muted: #9a73bf;
-  --t-ink: #5b2a86;
-  --t-paper: #ffffff;
-  --t-accent: #ff5fae;
-  --t-accent2: #5fd3ff;
-  --t-go: #3ddc97;
-  --t-stop: #ff5f7e;
-  --t-page: #f8d9f0;
+[data-theme="arcade"] {
+  --t-display: "Press Start 2P", ui-monospace, monospace;
+  --t-body: "Space Mono", ui-monospace, monospace;
+  --t-fg: #e8e8ff;
+  --t-muted: #8f8fd6;
+  --t-ink: #2de2ff;
+  --t-paper: #11113a;
+  --t-accent: #ff3df2;
+  --t-accent2: #ffe14d;
+  --t-go: #39ff6a;
+  --t-stop: #ff4747;
+  --t-page: #0b0b2b;
   --t-page-art:
-    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.7) 0 2px, transparent 3px) 0 0 / 90px 90px,
-    radial-gradient(circle at 60% 70%, rgba(255, 255, 255, 0.6) 0 1.5px, transparent 2.5px) 0 0 / 70px 70px,
-    linear-gradient(160deg, #ffd1ec 0%, #e4d4ff 45%, #c9ecff 100%);
+    radial-gradient(circle at 20% 30%, #fff 0 1px, transparent 1.5px) 0 0 / 97px 83px,
+    radial-gradient(circle at 70% 60%, #ffe14d 0 1px, transparent 1.5px) 0 0 / 131px 109px,
+    radial-gradient(circle at 40% 80%, #2de2ff 0 1px, transparent 1.5px) 0 0 / 151px 127px,
+    linear-gradient(180deg, #0b0b2b 0%, #1a0b3b 100%);
+}
+
+[data-theme="photoboy"] {
+  --t-display: "Silkscreen", ui-monospace, monospace;
+  --t-body: "Space Mono", ui-monospace, monospace;
+  --t-fg: #2a2f7a;
+  --t-muted: #6b6b8a;
+  --t-ink: #0f380f;
+  --t-paper: #9bbc0f;
+  --t-accent: #a2195b;
+  --t-accent2: #306230;
+  --t-go: #a2195b;
+  --t-stop: #6e6a72;
+  --t-page: #d8d6cf;
+  --t-page-art:
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.025) 0 2px, transparent 2px 6px);
+}
+
+[data-theme="kitty"] {
+  --t-display: "Mochiy Pop One", "Fredoka", sans-serif;
+  --t-body: "Fredoka", "Arial Rounded MT Bold", sans-serif;
+  --t-fg: #5a2a3a;
+  --t-muted: #b06a85;
+  --t-ink: #2b2b2b;
+  --t-paper: #ffffff;
+  --t-accent: #e60033;
+  --t-accent2: #ff8fb3;
+  --t-go: #7bd88f;
+  --t-stop: #ff8fb3;
+  --t-page: #ffe6ef;
+  --t-page-art:
+    repeating-linear-gradient(0deg, rgba(255, 143, 179, 0.22) 0 16px, transparent 16px 32px),
+    repeating-linear-gradient(90deg, rgba(255, 143, 179, 0.22) 0 16px, transparent 16px 32px);
 }
 
 html,
@@ -189,18 +223,54 @@ button:disabled {
   box-shadow: 0 0 24px rgba(255, 59, 47, 0.6);
 }
 
-[data-theme="y2k"] .btn {
-  background: linear-gradient(180deg, #ffffff 0%, #ffe3f3 100%);
-  color: #5b2a86;
-  border: 3px solid #ffffff;
-  border-radius: 999px;
-  font-weight: 600;
-  box-shadow: 0 0 0 2px #ff9fd0, 0 6px 14px rgba(150, 70, 200, 0.25);
+[data-theme="arcade"] .btn {
+  background: #1b1b4b;
+  color: #ffe14d;
+  border: 3px solid #2de2ff;
+  border-radius: 0;
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.6rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+  padding: 0.75rem 1rem;
+  box-shadow: 4px 4px 0 #ff3df2;
 }
-[data-theme="y2k"] .btn:hover {
-  background: linear-gradient(180deg, #ff9fd0 0%, #ff5fae 100%);
+[data-theme="arcade"] .btn:hover {
+  background: #ff3df2;
   color: #fff;
-  transform: translateY(-1px) scale(1.03);
+}
+[data-theme="arcade"] .btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #ff3df2;
+}
+
+[data-theme="photoboy"] .btn {
+  background: #c9c7bf;
+  color: #2a2f7a;
+  border: 2px solid #8f8c84;
+  border-radius: 999px;
+  font-family: "Silkscreen", monospace;
+  text-transform: uppercase;
+  box-shadow: 0 3px 0 #8f8c84;
+}
+[data-theme="photoboy"] .btn:hover {
+  background: #a2195b;
+  border-color: #5a0d32;
+  color: #fff;
+}
+
+[data-theme="kitty"] .btn {
+  background: #fff;
+  color: #5a2a3a;
+  border: 3px solid #2b2b2b;
+  border-radius: 999px;
+  font-family: "Mochiy Pop One", sans-serif;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 0 #ff8fb3;
+}
+[data-theme="kitty"] .btn:hover {
+  background: #ff8fb3;
+  color: #fff;
 }
 
 /* ------------------------------------------------------------------ cards */
@@ -224,10 +294,23 @@ button:disabled {
   border: 1px solid #ff3b2f;
   box-shadow: 0 0 40px rgba(255, 59, 47, 0.2);
 }
-[data-theme="y2k"] .card {
-  border: 4px solid #fff;
-  border-radius: 26px;
-  box-shadow: 0 0 0 3px #ff9fd0, 0 14px 30px rgba(150, 70, 200, 0.25);
+[data-theme="arcade"] .card {
+  color: #e8e8ff;
+  border: 3px solid #2de2ff;
+  box-shadow: 5px 5px 0 #ff3df2;
+}
+[data-theme="photoboy"] .card {
+  background: #c9c7bf;
+  color: #2a2f7a;
+  border: 2px solid #8f8c84;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 #a9a69e;
+}
+[data-theme="kitty"] .card {
+  color: #5a2a3a;
+  border: 3px solid #2b2b2b;
+  border-radius: 22px;
+  box-shadow: 0 5px 0 #ff8fb3;
 }
 
 .link {
@@ -276,6 +359,28 @@ button:disabled {
   35% { opacity: 1; transform: scale(1); }
   100% { opacity: 1; transform: scale(0.92); }
 }
+/* "Press me": sonar rings radiating from a live button. Rings sit outside the
+   element (pseudo-elements), so the button itself never moves under a finger. */
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.press-me {
+  position: relative;
+}
+.press-me::before,
+.press-me::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid var(--ring, currentColor);
+  animation: ripple 1.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+  pointer-events: none;
+}
+.press-me::after {
+  animation-delay: 0.9s;
+}
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 var(--ring); }
   100% { box-shadow: 0 0 0 10px transparent; }
@@ -288,6 +393,8 @@ button:disabled {
 .anim-bob { animation: bob 2.2s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
+  .press-me::before,
+  .press-me::after,
   .anim-bulb,
   .anim-twinkle,
   .anim-flicker,
