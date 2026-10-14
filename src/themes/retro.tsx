@@ -157,20 +157,6 @@ function ScreenBezel({ children }: { children: ReactNode }) {
   );
 }
 
-function EyeLevel() {
-  return (
-    <Svg viewBox="0 0 80 50" className="w-full">
-      <path d="M4 10 H52 V2 L76 25 L52 48 V40 H4 Z" fill={MUSTARD} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
-      <text x="30" y="22" textAnchor="middle" fontFamily="Courier Prime" fontWeight="700" fontSize="9.5" fill={INK}>
-        LOOK
-      </text>
-      <text x="30" y="33" textAnchor="middle" fontFamily="Courier Prime" fontWeight="700" fontSize="9.5" fill={INK}>
-        HERE
-      </text>
-    </Svg>
-  );
-}
-
 function PriceSticker() {
   const pts = Array.from({ length: 24 }, (_, i) => {
     const r = i % 2 ? 31 : 39;
@@ -317,7 +303,6 @@ export const retro: ThemeKit = {
   ExteriorArt,
   Lightbox,
   ScreenBezel,
-  EyeLevel,
   PriceSticker,
   Instructions,
   CoinPanel,

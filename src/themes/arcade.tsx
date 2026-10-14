@@ -163,17 +163,6 @@ function ScreenBezel({ children }: { children: ReactNode }) {
   );
 }
 
-function EyeLevel() {
-  return (
-    <div className="text-center text-[8px] leading-loose md:text-[10px]" style={{ ...pixel, color: YELLOW }}>
-      LOOK
-      <div className="anim-bulb" style={{ color: PINK }}>
-        ▶▶
-      </div>
-    </div>
-  );
-}
-
 function PriceSticker() {
   return (
     <div className="border-[3px] border-white px-1 py-2 text-center text-white" style={{ ...pixel, background: PINK, boxShadow: "4px 4px 0 #000" }}>
@@ -296,7 +285,6 @@ export const arcade: ThemeKit = {
   ExteriorArt,
   Lightbox,
   ScreenBezel,
-  EyeLevel,
   PriceSticker,
   Instructions,
   CoinPanel,

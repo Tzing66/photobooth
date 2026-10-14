@@ -141,19 +141,6 @@ function ScreenBezel({ children }: { children: ReactNode }) {
   );
 }
 
-function EyeLevel() {
-  return (
-    <Svg viewBox="0 0 80 60" className="w-full">
-      <Ink>
-        <path d="M6 34 Q30 20 64 32 M52 22 L66 32 L52 42" stroke={BLUE} strokeWidth={3} />
-      </Ink>
-      <text x="34" y="16" textAnchor="middle" fontSize="13" fill={INK} {...font}>
-        eye level
-      </text>
-    </Svg>
-  );
-}
-
 function PriceSticker() {
   return (
     <Boil className="rotate-6">
@@ -290,7 +277,6 @@ export const sketch: ThemeKit = {
   ExteriorArt,
   Lightbox,
   ScreenBezel,
-  EyeLevel,
   PriceSticker,
   Instructions,
   CoinPanel,

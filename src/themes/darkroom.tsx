@@ -152,19 +152,6 @@ function ScreenBezel({ children }: { children: ReactNode }) {
   );
 }
 
-function EyeLevel() {
-  return (
-    <div className="flex flex-col items-center gap-1 text-[9px] tracking-widest md:text-[10px]" style={{ color: RED }}>
-      <span>EYE</span>
-      <div className="flex items-center gap-1">
-        <span className="h-px w-5" style={{ background: RED, boxShadow: `0 0 6px ${RED}` }} />
-        <span className="anim-flicker">▶</span>
-      </div>
-      <span>LEVEL</span>
-    </div>
-  );
-}
-
 function PriceSticker() {
   return (
     <div className="border px-1.5 py-2 text-center text-[9px] leading-snug tracking-wider md:text-[11px]" style={{ borderColor: AMBER, color: AMBER }}>
@@ -283,7 +270,6 @@ export const darkroom: ThemeKit = {
   ExteriorArt,
   Lightbox,
   ScreenBezel,
-  EyeLevel,
   PriceSticker,
   Instructions,
   CoinPanel,

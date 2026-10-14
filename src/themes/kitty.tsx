@@ -116,17 +116,6 @@ function ScreenBezel({ children }: { children: ReactNode }) {
   );
 }
 
-function EyeLevel() {
-  return (
-    <div className="flex flex-col items-center">
-      <CharIcon who="kuromi" className="w-full" />
-      <span className="-mt-1 text-[9px] md:text-[11px]" style={{ ...pop, color: TEXT }}>
-        look!
-      </span>
-    </div>
-  );
-}
-
 function PriceSticker() {
   return (
     <div className="relative">
@@ -263,7 +252,6 @@ export const kitty: ThemeKit = {
   ExteriorArt,
   Lightbox,
   ScreenBezel,
-  EyeLevel,
   PriceSticker,
   Instructions,
   CoinPanel,

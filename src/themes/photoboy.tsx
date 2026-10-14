@@ -133,15 +133,6 @@ function ScreenBezel({ children }: { children: ReactNode }) {
   );
 }
 
-function EyeLevel() {
-  return (
-    <div className="text-center text-[10px] leading-tight md:text-xs" style={{ ...font, color: NAVY }}>
-      LOOK
-      <div className="anim-bulb text-base">▶</div>
-    </div>
-  );
-}
-
 function PriceSticker() {
   // A tiny cartridge: notched top-right corner, green label.
   return (
@@ -268,7 +259,6 @@ export const photoboy: ThemeKit = {
   ExteriorArt,
   Lightbox,
   ScreenBezel,
-  EyeLevel,
   PriceSticker,
   Instructions,
   CoinPanel,

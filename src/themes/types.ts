@@ -25,7 +25,6 @@ export interface ThemeKit {
   // Inside the booth
   Lightbox: FC;
   ScreenBezel: FC<{ children: ReactNode }>;
-  EyeLevel: FC;
   PriceSticker: FC;
   Instructions: FC;
   CoinPanel: FC<{ onClick?: () => void; go: boolean; label: string | null }>;
