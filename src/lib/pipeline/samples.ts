@@ -39,12 +39,12 @@ function silhouette(pose: number): string {
   return c.toDataURL("image/jpeg", 0.9);
 }
 
-export function frameSample(frame: FrameType, color: boolean): Promise<string> {
-  const key = `${frame}:${color}`;
+export function frameSample(frame: FrameType, color: boolean, authentic: boolean): Promise<string> {
+  const key = `${frame}:${color}:${authentic}`;
   let p = cache.get(key);
   if (!p) {
     placeholders ??= [0, 1, 2, 3].map(silhouette);
-    p = createPhotostrip(placeholders, { frame, color, stripOnly: true }).then((r) => r.strip);
+    p = createPhotostrip(placeholders, { frame, color, authentic, stripOnly: true }).then((r) => r.strip);
     p.catch(() => cache.delete(key));
     cache.set(key, p);
   }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../components/Spinner";
 import { showError } from "../lib/errors";
-import { getFrame, isColorMode, needsShadow } from "../lib/frames";
+import { getFrame, isAuthentic, isColorMode, needsShadow } from "../lib/frames";
 import { createPhotostrip } from "../lib/pipeline/strip";
 import { StorageFullError, addToGallery, getAllPhotos, getPhotostrip, isComplete, savePhotostrip, saveIndividualPhotos } from "../lib/storage";
 import { useTheme } from "../themes/ThemeContext";
@@ -48,7 +48,7 @@ export default function PrintStrip() {
           return;
         }
         const frame = getFrame();
-        const result = await createPhotostrip(photos as string[], { frame, color: isColorMode() });
+        const result = await createPhotostrip(photos as string[], { frame, color: isColorMode(), authentic: isAuthentic() });
         await savePhotostrip(result.strip);
         await saveIndividualPhotos(result.singles);
         addToGallery(result.strip, frame).catch((e) => console.warn("Couldn't add strip to gallery", e));
