@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import { showError } from "../lib/errors";
 import { frameDef, getFrame, needsShadow } from "../lib/frames";
-import { canShareFiles, download, printStrip, storyImage } from "../lib/output";
+import { canShareFiles, isTouchDevice, printStrip, saveImage, storyImage, toFile } from "../lib/output";
 import { clearSession, getAllPhotos, getIndividualPhotos, getPhotostrip, isComplete } from "../lib/storage";
 import { useTheme } from "../themes/ThemeContext";
 
@@ -42,6 +42,10 @@ export default function Pickup() {
   const [singles, setSingles] = useState<string[]>([]);
   const [cut, setCut] = useState(false);
   const [sharePreview, setSharePreview] = useState<string | null>(null);
+  // Pre-built files so "save" can open the share sheet synchronously on tap (iOS requirement).
+  const [stripFile, setStripFile] = useState<File | null>(null);
+  const [singleFiles, setSingleFiles] = useState<File[]>([]);
+  const touch = isTouchDevice();
 
   const frame = getFrame();
   const shadow = needsShadow(frame) ? "shadow-lg shadow-black/40" : "";
@@ -61,6 +65,7 @@ export default function Pickup() {
           return;
         }
         setStrip(s);
+        toFile(s, "photostrip.png").then(setStripFile, () => null);
       } catch (e) {
         console.error("Failed to load session", e);
         showError(navigate, "Loading Error", "Failed to load your photos and photostrip. Please try refreshing the page or start a new session.");
@@ -71,8 +76,10 @@ export default function Pickup() {
   const showSingles = async () => {
     try {
       const saved = await getIndividualPhotos();
-      setSingles(saved.length === 4 ? saved : await sliceStrip(strip));
+      const urls = saved.length === 4 ? saved : await sliceStrip(strip);
+      setSingles(urls);
       setCut(true);
+      Promise.all(urls.map((u, i) => toFile(u, `photo-${i + 1}.png`))).then(setSingleFiles, () => null);
     } catch (e) {
       console.error("Failed to load single photos", e);
     }
@@ -106,7 +113,7 @@ export default function Pickup() {
   };
 
   const actions: [keyof typeof ICONS, () => void][] = [
-    ["download", () => download(strip, "photostrip.png")],
+    ["download", () => saveImage(strip, "photostrip.png", stripFile)],
     ["share", share],
     ["print", () => printStrip(strip)],
     ["restart", restart],
@@ -143,7 +150,7 @@ export default function Pickup() {
               <kit.IconButton kind="back" onClick={() => setCut(false)} />
             </div>
             {singles.map((s, i) => (
-              <button key={i} onClick={() => download(s, `photo-${i + 1}.png`)} aria-label={`Download photo ${i + 1}`}>
+              <button key={i} onClick={() => saveImage(s, `photo-${i + 1}.png`, singleFiles[i])} aria-label={`Download photo ${i + 1}`}>
                 <img
                   src={s}
                   alt={`Photo ${i + 1}`}
@@ -157,14 +164,14 @@ export default function Pickup() {
       </div>
 
       <div className="flex w-full max-w-xl flex-col items-center">
-        <p className="mb-2 text-center text-xs text-muted md:hidden">Press and hold the image to save it straight to your phone!</p>
+        <p className="mb-2 text-center text-xs text-muted md:hidden">Tap save, then "Save Image" to put it in your Photos.</p>
         <div className="grid w-full grid-cols-2 gap-2 pb-2 sm:grid-cols-4 sm:gap-3">
           {actions.map(([name, fn]) => (
             <button key={name} className="btn" onClick={fn} disabled={!strip}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 {ICONS[name]}
               </svg>
-              {name}
+              {name === "download" && touch ? "save" : name}
             </button>
           ))}
         </div>

@@ -7,6 +7,31 @@ export function download(dataUrl: string, filename: string) {
   a.click();
 }
 
+/** Phones/tablets, including iPadOS which reports itself as a Mac. */
+export const isTouchDevice = () =>
+  /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+/** Build the File up front: the share sheet must open synchronously inside the tap. */
+export async function toFile(url: string, filename: string): Promise<File> {
+  const blob = await (await fetch(url)).blob();
+  return new File([blob], filename, { type: blob.type || "image/png" });
+}
+
+/**
+ * Save an image. Browsers can't write to the photo library directly, so on
+ * phones this opens the share sheet with the image attached, where "Save
+ * Image" puts it straight into Photos. Elsewhere it's a normal download.
+ */
+export function saveImage(url: string, filename: string, file?: File | null) {
+  if (file && isTouchDevice() && canShareFiles(file)) {
+    navigator.share({ files: [file] }).catch((e: DOMException) => {
+      if (e.name !== "AbortError") download(url, filename);
+    });
+    return;
+  }
+  download(url, filename);
+}
+
 const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();

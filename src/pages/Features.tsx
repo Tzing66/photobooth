@@ -4,7 +4,7 @@ import Modal from "../components/Modal";
 import Spinner from "../components/Spinner";
 import { useGallery, type GalleryEntry } from "../hooks/useGallery";
 import { frameDef, type FrameType } from "../lib/frames";
-import { download } from "../lib/output";
+import { saveImage } from "../lib/output";
 import { clearGallery, deleteFromGallery } from "../lib/storage";
 
 const TILTS = ["-rotate-2", "rotate-1", "-rotate-1", "rotate-2", "rotate-0"];
@@ -68,7 +68,7 @@ export default function Features() {
               {frameDef(open.frame as FrameType).name} · {fmt.format(open.createdAt)}
             </p>
             <div className="flex gap-2">
-              <button className="btn" onClick={() => download(open.url, `photostrip-${open.createdAt}.png`)}>
+              <button className="btn" onClick={() => saveImage(open.url, `photostrip-${open.createdAt}.png`, new File([open.strip], `photostrip-${open.createdAt}.png`, { type: open.strip.type || "image/png" }))}>
                 download
               </button>
               <button className="btn" onClick={() => remove(open.id)}>
