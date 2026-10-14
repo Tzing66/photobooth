@@ -4,3 +4,4 @@ dist
 *.local
 plan.md
 *.tsbuildinfo
+public/mediapipe/wasm

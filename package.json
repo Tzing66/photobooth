@@ -4,13 +4,16 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-mediapipe.mjs",
     "dev": "vite",
-    "dev:phone": "vite --host --mode phone",
+    "dev:phone": "node scripts/copy-mediapipe.mjs && vite --host --mode phone",
+    "prebuild": "node scripts/copy-mediapipe.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.1.0",
     "framer-motion": "^14.2.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
