@@ -20,7 +20,11 @@ function hexToRgb(hex: string) {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-const LIGHT_PAPERS = ["#d5d1cc", "#ffdadd"];
+/** Light papers tint the burn with their own colour; dark ones let black through. */
+function isLightPaper(paper: string) {
+  const rgb = hexToRgb(paper);
+  return !!rgb && 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b > 140;
+}
 
 /**
  * Uneven chemical burn along each edge. On dark frames the edges are erased so
@@ -29,7 +33,7 @@ const LIGHT_PAPERS = ["#d5d1cc", "#ffdadd"];
  */
 export function edgeBurn(ctx: Ctx, x: number, y: number, w: number, h: number, paper = "black") {
   ctx.save();
-  const light = LIGHT_PAPERS.includes(paper.toLowerCase());
+  const light = isLightPaper(paper);
   const rgb = light ? hexToRgb(paper) : null;
   ctx.globalCompositeOperation = light ? "source-over" : "destination-out";
 
@@ -132,6 +136,96 @@ export function filmColor(ctx: Ctx, w: number, h: number) {
     d[i] = r;
     d[i + 1] = g;
     d[i + 2] = b;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// --- "authentic" booth look ---------------------------------------------------
+// A real booth fires a bare flash about a foot from your face onto fast paper:
+// faces blow out, shadows crush, light falls off hard toward the frame edges,
+// highlights bleed, and the print is soft and grainy. These run before (soften,
+// harshFlash, bloom) and after (heavyGrain) the normal toning.
+
+/** Lens/paper softness: cheap blur by down- then up-sampling. */
+export function soften(ctx: Ctx, w: number, h: number, k = 0.45) {
+  const small = document.createElement("canvas");
+  small.width = Math.max(1, Math.round(w * k));
+  small.height = Math.max(1, Math.round(h * k));
+  const sctx = small.getContext("2d")!;
+  sctx.imageSmoothingQuality = "high";
+  sctx.drawImage(ctx.canvas, 0, 0, small.width, small.height);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(small, 0, 0, w, h);
+  ctx.restore();
+}
+
+/** Over-exposure + hard S-curve, brightest slightly above centre where the face sits. */
+export function harshFlash(ctx: Ctx, w: number, h: number) {
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  const cx = w / 2;
+  const cy = h * 0.42;
+  const maxD = Math.hypot(w / 2, h * 0.58);
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const v = Math.min(1, (i / 255) * 1.3); // ~1/3 stop over
+    const s = v < 0.5 ? 2 * v * v : 1 - 2 * (1 - v) * (1 - v); // S-curve
+    curve[i] = (v * 0.35 + s * 0.65) * 255;
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const t = Math.hypot(x - cx, y - cy) / maxD;
+      const falloff = 1.08 - 0.5 * t * t; // flash hot-spot, dark corners
+      const i = (y * w + x) * 4;
+      d[i] = clamp(curve[d[i]] * falloff);
+      d[i + 1] = clamp(curve[d[i + 1]] * falloff);
+      d[i + 2] = clamp(curve[d[i + 2]] * falloff);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/** Highlights bleed into their surroundings (halation on cheap paper). */
+export function bloom(ctx: Ctx, w: number, h: number, strength = 0.35) {
+  const k = 0.12;
+  const sw = Math.max(1, Math.round(w * k));
+  const sh = Math.max(1, Math.round(h * k));
+  const small = document.createElement("canvas");
+  small.width = sw;
+  small.height = sh;
+  const sctx = small.getContext("2d", { willReadFrequently: true })!;
+  sctx.drawImage(ctx.canvas, 0, 0, sw, sh);
+  const img = sctx.getImageData(0, 0, sw, sh);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    const keep = lum > 185 ? (lum - 185) / 70 : 0;
+    d[i] *= keep;
+    d[i + 1] *= keep;
+    d[i + 2] *= keep;
+  }
+  sctx.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.globalAlpha = strength;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(small, 0, 0, w, h);
+  ctx.restore();
+}
+
+/** Coarse silver grain, stronger in the mid-tones like real fast film. */
+export function heavyGrain(ctx: Ctx, w: number, h: number, amount = 26) {
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = (d[i] + d[i + 1] + d[i + 2]) / 765;
+    const n = (Math.random() - 0.5) * amount * (0.4 + 2.4 * lum * (1 - lum));
+    d[i] = clamp(d[i] + n);
+    d[i + 1] = clamp(d[i + 1] + n);
+    d[i + 2] = clamp(d[i + 2] + n);
   }
   ctx.putImageData(img, 0, 0);
 }

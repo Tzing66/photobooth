@@ -5,8 +5,8 @@
 // every print so each strip looks hand-assembled.
 
 import { type FrameType, frameDef } from "../frames";
-import { blackAndWhite, dust, edgeBurn, filmColor, flashGlow } from "./effects";
-import { drawOverlay, type Cell } from "./overlays";
+import { blackAndWhite, bloom, dust, edgeBurn, filmColor, flashGlow, harshFlash, heavyGrain, soften } from "./effects";
+import { drawOverlay, ensureOverlayFonts, type Cell } from "./overlays";
 import { applyTexture, randomTexture } from "./textures";
 
 const S = 2; // render scale
@@ -57,16 +57,29 @@ function coverCrop(img: HTMLImageElement, aspect: number) {
   return [0, (h - ch) / 2, w, ch] as const;
 }
 
+interface Look {
+  paper: string;
+  color: boolean;
+  authentic: boolean;
+  texture: HTMLCanvasElement;
+}
+
 /** Render one developed photo of size w×h. */
-function develop(img: HTMLImageElement, w: number, h: number, paper: string, color: boolean, texture: HTMLCanvasElement) {
+function develop(img: HTMLImageElement, w: number, h: number, { paper, color, authentic, texture }: Look) {
   const { c, ctx } = canvas(w, h);
   const [sx, sy, sw, sh] = coverCrop(img, w / h);
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  if (authentic) {
+    soften(ctx, w, h);
+    harshFlash(ctx, w, h);
+    bloom(ctx, w, h);
+  }
   if (!color) flashGlow(ctx, 0, 0, w, h);
-  applyTexture(ctx, texture, 0, 0, w, h);
+  applyTexture(ctx, texture, 0, 0, w, h, authentic ? 0.18 : 0.25);
   edgeBurn(ctx, 0, 0, w, h, paper);
   if (color) filmColor(ctx, w, h);
   else blackAndWhite(ctx, w, h);
+  if (authentic) heavyGrain(ctx, w, h);
   return c;
 }
 
@@ -94,26 +107,30 @@ export interface StripResult {
 export interface StripOptions {
   frame: FrameType;
   color: boolean;
+  /** Harsh close-flash booth look (see effects.ts). */
+  authentic?: boolean;
   /** Skip the four single prints (used when rendering frame previews). */
   stripOnly?: boolean;
 }
 
-export async function createPhotostrip(images: string[], { frame, color, stripOnly }: StripOptions): Promise<StripResult> {
+export async function createPhotostrip(images: string[], { frame, color, authentic = false, stripOnly }: StripOptions): Promise<StripResult> {
   if (images.length !== 4 || images.some((i) => !i)) throw new Error("Invalid images array");
 
   const def = frameDef(frame);
   const paper = def.background;
   const captioned = !!def.caption;
+  const extra = def.pad ?? {};
   if (captioned) await ensureCaptionFont();
+  if (def.overlay) await ensureOverlayFonts();
 
   const loaded = await Promise.all(images.map((src, i) => loadImage(src, `image ${i}`)));
 
   // --- layout ---
-  const gap = randInt(5, 10) * S + (captioned ? 20 * S : 0);
+  const gap = randInt(5, 10) * S + (captioned ? 20 * S : 0) + (extra.gap ?? 0) * S;
   const pad = randInt(5, 10) * S;
-  const top = captioned ? pad + gap : pad;
-  const side = pad + (captioned ? 4 * S : 0);
-  const bottom = pad;
+  const top = (captioned ? pad + gap : pad) + (extra.top ?? 0) * S;
+  const side = pad + (captioned ? 4 * S : 0) + (extra.side ?? 0) * S;
+  const bottom = pad + (extra.bottom ?? 0) * S;
   const width = CELL_W + side * 2;
   const height = 4 * (CELL_H + 2) + 3 * gap + bottom + top;
 
@@ -123,6 +140,7 @@ export async function createPhotostrip(images: string[], { frame, color, stripOn
 
   const photoTexture = randomTexture();
   const paperTexture = randomTexture();
+  const look: Look = { paper, color, authentic, texture: photoTexture };
   applyTexture(ctx, paperTexture, 0, 0, width, height, 0.1, true);
 
   const cells: Cell[] = [];
@@ -130,7 +148,7 @@ export async function createPhotostrip(images: string[], { frame, color, stripOn
     const x = side;
     const y = top + i * (CELL_H + gap);
     cells.push({ x, y, w: CELL_W, h: CELL_H });
-    ctx.drawImage(develop(img, CELL_W, CELL_H, paper, color, photoTexture), x + nudge(), y + nudge());
+    ctx.drawImage(develop(img, CELL_W, CELL_H, look), x + nudge(), y + nudge());
   });
 
   if (def.caption) {
@@ -167,7 +185,7 @@ export async function createPhotostrip(images: string[], { frame, color, stripOn
     const ph = SINGLE_H - 2 * margin;
     const shiftX = Math.min(margin / 2, Math.abs(jx)) * Math.sign(jx || -1);
     const shiftY = Math.min(margin / 2, Math.abs(jy)) * Math.sign(jy || -1);
-    sctx.drawImage(develop(img, pw, ph, paper, color, photoTexture), margin + sideExtra + shiftX, margin + captionSpace + shiftY);
+    sctx.drawImage(develop(img, pw, ph, look), margin + sideExtra + shiftX, margin + captionSpace + shiftY);
     dust(sctx, w, h);
     if (def.caption) drawCaption(sctx, def.caption, w / 2, captionSpace / 2 + 5 * S, 25 * S);
     result.singles.push(single.toDataURL("image/png"));
