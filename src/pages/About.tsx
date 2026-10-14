@@ -13,7 +13,7 @@ export default function About() {
           burn at the edges, toned to either contrasty black & white or faded film colour, and dusted with specks. Spacing and placement shift a few
           pixels on every print, just like the real thing.
         </p>
-        <p>Four booth themes (Retro ’70s, Sketchbook, Darkroom and Y2K Purikura) change the cabinet you're standing in, not the photos.</p>
+        <p>Six booth themes (Retro ’70s, Sketchbook, Darkroom, Pixel Arcade, Photo Boy and Hello Kitty & Friends) change the cabinet you're standing in, not the photos.</p>
         <p className="opacity-70">Inspired by mysketchbooth.com.</p>
       </div>
     </InfoPage>

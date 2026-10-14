@@ -2,7 +2,7 @@
 
 A personal, browser-only vintage photobooth. You take four photos with a phone or laptop camera, or upload four, and get back a developed photostrip. Everything runs client-side, so no photo ever leaves your device.
 
-Functionality mirrors [mysketchbooth.com](https://mysketchbooth.com). The booth itself has four switchable looks: **Retro ’70s**, **Sketchbook**, **Darkroom** and **Y2K Purikura**. Cycle them with the button in the bottom-right corner.
+Functionality mirrors [mysketchbooth.com](https://mysketchbooth.com). The booth itself has six switchable looks: **Retro ’70s**, **Sketchbook**, **Darkroom**, **Pixel Arcade**, **Photo Boy** and **Hello Kitty & Friends**. Cycle them with the button in the bottom-right corner.
 
 ## Run it
 
@@ -25,15 +25,15 @@ Elsewhere, `npm run build` writes a static site to `dist/`. Any static host work
 | Route | What happens |
 |---|---|
 | `/` | Outside the booth. The board shows 5 random strips from your gallery. **enter** clears the last session. |
-| `/frameSelection` | Carousel of 10 frames. The preview is rendered by the real pipeline, in your current b&w/colour mode. |
+| `/frameSelection` | Carousel of 16 frames. The preview is rendered by the real pipeline, in your current b&w/colour mode. |
 | `/select` | take photo / upload photo |
 | `/takePicture` | Front camera. Each of 4 shots gets a 3-2-1 countdown and a flash, with 2s between shots. |
 | `/upload` | 2×2 slots, file picker (≤25MB), crop locked to 3:4 |
 | `/printStrip` | "Delivered in 5 seconds" while the strip develops in the background, then it slides out of the slot |
-| `/pickup` | download · share (1080×1920 story image) · print (A4) · restart · ✂ cut into 4 single prints |
+| `/pickup` | save (on phones: share sheet → Save Image → Photos) · share (1080×1920 story image) · print (A4) · restart · ✂ cut into 4 single prints |
 | `/features` | Your gallery of every strip made in this browser |
 
-The **b&w ↔ colour** toggle sits under the booth screen. B&W is the default.
+Two toggles sit under the booth screen: **b&w ↔ colour** (B&W is the default) and **normal ↔ authentic**. Authentic adds a harsh close-flash exposure: blown highlights, crushed blacks, flash falloff, halation, softness and heavy grain.
 
 ## Code map
 
