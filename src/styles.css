@@ -313,6 +313,40 @@ button:disabled {
   box-shadow: 0 5px 0 #ff8fb3;
 }
 
+/* Option chips on the set-up screen. currentColor keeps them legible on
+   both light and dark theme cards. */
+.chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+  border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  scroll-snap-align: start;
+}
+.chip:hover {
+  border-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+.chip[aria-pressed="true"] {
+  border-color: var(--t-accent);
+  box-shadow: 0 0 0 1.5px var(--t-accent);
+}
+.chip-swatch {
+  flex-shrink: 0;
+  border-radius: 999px;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent);
+}
+[data-theme="arcade"] .chip {
+  font-family: "Space Mono", monospace;
+}
+
 .link {
   color: var(--t-muted);
   text-decoration: underline;
@@ -349,6 +383,10 @@ button:disabled {
 @keyframes sway {
   0%, 100% { transform: rotate(-2deg); }
   50% { transform: rotate(2deg); }
+}
+@keyframes nudge-up {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 @keyframes bob {
   0%, 100% { transform: translateY(0); }
@@ -391,6 +429,7 @@ button:disabled {
 .anim-flicker { animation: flicker 5s linear infinite; }
 .anim-sway { animation: sway 4s ease-in-out infinite; transform-origin: top center; }
 .anim-bob { animation: bob 2.2s ease-in-out infinite; }
+.anim-nudge-up { animation: nudge-up 0.9s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .press-me::before,
@@ -399,6 +438,7 @@ button:disabled {
   .anim-twinkle,
   .anim-flicker,
   .anim-sway,
+  .anim-nudge-up,
   .anim-bob {
     animation: none;
   }

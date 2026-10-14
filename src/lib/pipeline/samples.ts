@@ -1,10 +1,6 @@
-// Frame previews for the selection carousel, rendered through the real pipeline
-// with placeholder "sitter" silhouettes so previews always match real output.
+// Placeholder "sitter" silhouettes for previews when there's no camera
+// snapshot; they go through the real pipeline like any photo.
 
-import type { FrameType } from "../frames";
-import { createPhotostrip } from "./strip";
-
-const cache = new Map<string, Promise<string>>();
 let placeholders: string[] | null = null;
 
 function silhouette(pose: number): string {
@@ -39,14 +35,8 @@ function silhouette(pose: number): string {
   return c.toDataURL("image/jpeg", 0.9);
 }
 
-export function frameSample(frame: FrameType, color: boolean, authentic: boolean): Promise<string> {
-  const key = `${frame}:${color}:${authentic}`;
-  let p = cache.get(key);
-  if (!p) {
-    placeholders ??= [0, 1, 2, 3].map(silhouette);
-    p = createPhotostrip(placeholders, { frame, color, authentic, stripOnly: true }).then((r) => r.strip);
-    p.catch(() => cache.delete(key));
-    cache.set(key, p);
-  }
-  return p;
+/** Four placeholder portraits (used when no camera snapshot is available). */
+export function placeholderPortraits(): string[] {
+  placeholders ??= [0, 1, 2, 3].map(silhouette);
+  return placeholders;
 }
