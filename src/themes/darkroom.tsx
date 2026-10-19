@@ -1,7 +1,7 @@
 // Darkroom: black room, safelight-red neon edges, film sprockets, monospace labels.
 
 import type { ReactNode } from "react";
-import type { ThemeKit, ToggleProps } from "./types";
+import type { ThemeKit } from "./types";
 import { ArrowDown, BackIcon, EXT, STEPS, ScissorsIcon, Svg } from "./shared";
 
 const RED = "#ff3b2f";
@@ -203,19 +203,6 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function Toggle({ on: color, onToggle, left, right, label }: ToggleProps) {
-  return (
-    <button onClick={onToggle} aria-label={label} className="flex items-center border text-[11px] tracking-[0.25em] md:text-xs" style={{ borderColor: RED, ...glow(8) }}>
-      <span className="px-3 py-1.5 transition-colors" style={{ background: color ? "transparent" : RED, color: color ? RED : BLACK }}>
-        {left.toUpperCase()}
-      </span>
-      <span className="px-3 py-1.5 transition-colors" style={{ background: color ? RED : "transparent", color: color ? BLACK : RED }}>
-        {right.toUpperCase()}
-      </span>
-    </button>
-  );
-}
-
 function PrintTimer({ seconds }: { seconds: number }) {
   return (
     <div className="grid h-full w-full place-items-center border bg-[#120c0b] text-center text-[10px] tracking-[0.2em] md:text-xs" style={{ borderColor: RED, color: RED, ...glow(16) }}>
@@ -273,7 +260,6 @@ export const darkroom: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  Toggle,
   PrintTimer,
   PickupSlot,
   Note,

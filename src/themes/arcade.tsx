@@ -2,7 +2,7 @@
 // CRT scanlines and Press Start 2P everywhere.
 
 import type { ReactNode } from "react";
-import type { ThemeKit, ToggleProps } from "./types";
+import type { ThemeKit } from "./types";
 import { BackIcon, EXT, STEPS, ScissorsIcon, Svg } from "./shared";
 
 const NAVY = "#1b1b4b";
@@ -212,20 +212,6 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function Toggle({ on, onToggle, left, right, label }: ToggleProps) {
-  const seg = (active: boolean) => ({ background: active ? YELLOW : NAVY, color: active ? NAVY : CYAN });
-  return (
-    <button onClick={onToggle} aria-label={label} className="flex border-[3px] text-[8px] md:text-[9px]" style={{ ...pixel, borderColor: CYAN, boxShadow: `3px 3px 0 ${PINK}` }}>
-      <span className="px-2.5 py-2 transition-colors" style={seg(!on)}>
-        {left.toUpperCase()}
-      </span>
-      <span className="px-2.5 py-2 transition-colors" style={seg(on)}>
-        {right.toUpperCase()}
-      </span>
-    </button>
-  );
-}
-
 function PrintTimer({ seconds }: { seconds: number }) {
   return (
     <div className="grid h-full w-full place-items-center border-4 bg-black text-center" style={{ ...pixel, borderColor: CYAN, boxShadow: `6px 6px 0 ${PINK}` }}>
@@ -288,7 +274,6 @@ export const arcade: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  Toggle,
   PrintTimer,
   PickupSlot,
   Note,

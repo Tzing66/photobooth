@@ -2,7 +2,7 @@
 // constant "boil" so every line jitters like frame-by-frame animation.
 
 import type { ReactNode } from "react";
-import type { ThemeKit, ToggleProps } from "./types";
+import type { ThemeKit } from "./types";
 import { ArrowDown, BackIcon, EXT, STEPS, ScissorsIcon, Svg, useBoil } from "./shared";
 
 const INK = "#1d1d1f";
@@ -195,23 +195,6 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function Toggle({ on: color, onToggle, left, right, label }: ToggleProps) {
-  return (
-    <div className="flex items-center gap-3 text-lg font-bold md:text-xl">
-      <span className={color ? "opacity-40" : ""}>{left}</span>
-      <Boil>
-        <button onClick={onToggle} aria-label={label} className="relative h-8 w-16 rounded-full border-[2.5px] bg-white" style={{ borderColor: INK }}>
-          <span
-            className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-[2.5px] transition-all duration-300"
-            style={{ borderColor: INK, left: color ? "calc(100% - 1.7rem)" : "2px", background: color ? "linear-gradient(135deg,#ef4b3f,#ffe45c,#2f5bff)" : INK }}
-          />
-        </button>
-      </Boil>
-      <span className={color ? "" : "opacity-40"}>{right}</span>
-    </div>
-  );
-}
-
 function PrintTimer({ seconds }: { seconds: number }) {
   return (
     <Boil className="h-full w-full">
@@ -280,7 +263,6 @@ export const sketch: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  Toggle,
   PrintTimer,
   PickupSlot,
   Note,

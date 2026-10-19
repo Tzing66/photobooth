@@ -2,7 +2,7 @@
 // Kitty, My Melody, Kuromi, Keroppi and Pompompurin hanging around the booth.
 
 import type { ReactNode } from "react";
-import type { ThemeKit, ToggleProps } from "./types";
+import type { ThemeKit } from "./types";
 import { BackIcon, EXT, STEPS, ScissorsIcon, Svg } from "./shared";
 import { BOW_RED, Bow, CharIcon, Keroppi, Kitty, Kuromi, Melody, Purin } from "./kittyChars";
 
@@ -169,23 +169,6 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function Toggle({ on, onToggle, left, right, label }: ToggleProps) {
-  return (
-    <div className="flex items-center gap-2.5 text-sm font-semibold md:text-base" style={{ color: TEXT }}>
-      <span className={on ? "opacity-50" : ""}>{left}</span>
-      <button onClick={onToggle} aria-label={label} className="relative h-8 w-16 rounded-full border-[3px]" style={{ borderColor: OUT, background: on ? PINK : "#fff" }}>
-        <span
-          className="absolute top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full border-2 bg-white text-[11px] transition-all duration-300"
-          style={{ borderColor: OUT, left: on ? "calc(100% - 1.6rem)" : "1px", color: BOW_RED }}
-        >
-          ♥
-        </span>
-      </button>
-      <span className={on ? "" : "opacity-50"}>{right}</span>
-    </div>
-  );
-}
-
 function PrintTimer({ seconds }: { seconds: number }) {
   return (
     <div className="relative h-full w-full pt-[22%]">
@@ -255,7 +238,6 @@ export const kitty: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  Toggle,
   PrintTimer,
   PickupSlot,
   Note,

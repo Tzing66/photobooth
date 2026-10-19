@@ -2,15 +2,6 @@ import type { FC, ReactNode } from "react";
 
 export type ThemeId = "retro" | "sketch" | "darkroom" | "arcade" | "photoboy" | "kitty";
 
-/** Two-way switch (b&w ↔ colour, normal ↔ authentic). `on` = right option selected. */
-export interface ToggleProps {
-  on: boolean;
-  onToggle: () => void;
-  left: string;
-  right: string;
-  label: string;
-}
-
 /**
  * A theme only supplies decor: all behaviour lives in the pages. Every piece
  * maps onto a fixed spot in the shared layouts (see ExteriorShell / BoothInterior).
@@ -28,7 +19,6 @@ export interface ThemeKit {
   PriceSticker: FC;
   Instructions: FC;
   CoinPanel: FC<{ onClick?: () => void; go: boolean; label: string | null }>;
-  Toggle: FC<ToggleProps>;
 
   // Print + pickup
   PrintTimer: FC<{ seconds: number }>;

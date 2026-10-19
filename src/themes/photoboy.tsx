@@ -2,7 +2,7 @@
 // A button, and a little thermal printer for the strip.
 
 import type { ReactNode } from "react";
-import type { ThemeKit, ToggleProps } from "./types";
+import type { ThemeKit } from "./types";
 import { BackIcon, EXT, STEPS, ScissorsIcon, Svg } from "./shared";
 
 // The classic four LCD shades, darkest to lightest.
@@ -185,23 +185,6 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function Toggle({ on, onToggle, left, right, label }: ToggleProps) {
-  const pill = (active: boolean) => ({
-    background: active ? NAVY : "#8e8b84",
-    color: active ? "#fff" : "#e8e6df",
-  });
-  return (
-    <button onClick={onToggle} aria-label={label} className="flex -rotate-6 items-center gap-2 text-[9px] md:text-[10px]" style={font}>
-      <span className="rounded-full px-3 py-1 transition-colors" style={pill(!on)}>
-        {left.toUpperCase()}
-      </span>
-      <span className="rounded-full px-3 py-1 transition-colors" style={pill(on)}>
-        {right.toUpperCase()}
-      </span>
-    </button>
-  );
-}
-
 function PrintTimer({ seconds }: { seconds: number }) {
   return (
     <div className="h-full w-full rounded-lg p-[10%]" style={{ background: BEZEL, boxShadow: "0 5px 0 #3a3a4b" }}>
@@ -262,7 +245,6 @@ export const photoboy: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  Toggle,
   PrintTimer,
   PickupSlot,
   Note,

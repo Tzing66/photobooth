@@ -1,7 +1,7 @@
 // Retro 70s: cream enamel cabinet, chrome trim, red velvet curtain, marquee bulbs.
 
 import type { ReactNode } from "react";
-import type { ThemeKit, ToggleProps } from "./types";
+import type { ThemeKit } from "./types";
 import { ArrowDown, BackIcon, EXT, STEPS, ScissorsIcon, Svg, perimeter } from "./shared";
 
 const INK = "#3a1f12";
@@ -225,26 +225,6 @@ function CoinPanel({ onClick, go, label }: { onClick?: () => void; go: boolean; 
   );
 }
 
-function Toggle({ on: color, onToggle, left, right, label }: ToggleProps) {
-  return (
-    <div className="flex items-center gap-3 font-bold uppercase tracking-wider text-sm md:text-base">
-      <span className={color ? "opacity-50" : ""}>{left}</span>
-      <button
-        onClick={onToggle}
-        aria-label={label}
-        className="relative h-7 w-14 rounded-full border-[3px] md:h-8 md:w-16"
-        style={{ borderColor: INK, background: color ? `linear-gradient(90deg, ${RED}, ${ORANGE}, ${MUSTARD})` : "#5b4636" }}
-      >
-        <span
-          className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-2 transition-all duration-300 md:h-7 md:w-7"
-          style={{ borderColor: INK, left: color ? "calc(100% - 1.6rem)" : "-2px", background: "linear-gradient(180deg,#fdfdfd,#b8b8b8 45%,#f0f0f0 55%,#8a8a8a)" }}
-        />
-      </button>
-      <span className={color ? "" : "opacity-50"}>{right}</span>
-    </div>
-  );
-}
-
 function PrintTimer({ seconds }: { seconds: number }) {
   return (
     <div className="relative grid h-full w-full place-items-center rounded-full border-4 text-center" style={{ borderColor: INK, background: MUSTARD, boxShadow: `0 5px 0 ${INK}`, color: INK }}>
@@ -306,7 +286,6 @@ export const retro: ThemeKit = {
   PriceSticker,
   Instructions,
   CoinPanel,
-  Toggle,
   PrintTimer,
   PickupSlot,
   Note,
