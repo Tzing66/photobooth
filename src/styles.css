@@ -347,6 +347,26 @@ button:disabled {
   font-family: "Space Mono", monospace;
 }
 
+/* Round controls over the live camera (flip, flash). Same on every theme:
+   they sit on the video, not on the theme's decor. */
+.cam-btn {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.5);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+.cam-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.cam-btn[aria-pressed="true"] {
+  color: #ffd84a;
+}
+
 .link {
   color: var(--t-muted);
   text-decoration: underline;
