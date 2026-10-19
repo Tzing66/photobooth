@@ -177,6 +177,29 @@ function blurChannel(src: Float32Array, w: number, h: number, r: number): Float3
   return a;
 }
 
+/** 3×3 gaussian ([1,2,1] separable): the finest possible blur, ~0.85px sigma. */
+function gauss3(src: Float32Array, w: number, h: number): Float32Array {
+  const tmp = new Float32Array(src.length);
+  const out = new Float32Array(src.length);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const l = src[row + (x > 0 ? x - 1 : x)];
+      const r = src[row + (x < w - 1 ? x + 1 : x)];
+      tmp[row + x] = (l + 2 * src[row + x] + r) * 0.25;
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    const up = (y > 0 ? y - 1 : y) * w;
+    const dn = (y < h - 1 ? y + 1 : y) * w;
+    for (let x = 0; x < w; x++) out[y * w + x] = (tmp[up + x] + 2 * tmp[y * w + x] + tmp[dn + x]) * 0.25;
+  }
+  return out;
+}
+
+/** Soft coring: differences smaller than `t` (sensor noise) contribute nothing. */
+const core = (d: number, t: number) => (d > t ? d - t : d < -t ? d + t : 0);
+
 /** Value below which `p` of the samples fall (0..1 inputs). */
 function percentile(lum: Float32Array, p: number) {
   const hist = new Uint32Array(1024);
@@ -192,15 +215,16 @@ function percentile(lum: Float32Array, p: number) {
 
 /** Strong S-curve: crushed toe, smooth shoulder, bright skin. */
 function boothCurve(x: number) {
-  const v = Math.min(1, Math.max(0, x)) ** 0.82; // flash: lift the mids (skin)
-  const k = 1.75;
+  const v = Math.min(1, Math.max(0, x)) ** 0.9; // flash: a gentle lift in the mids (skin)
+  const k = 1.6;
   const s = v < 0.5 ? 0.5 * (2 * v) ** k : 1 - 0.5 * (2 * (1 - v)) ** k;
   return s;
 }
 
 /**
  * Develops the photo in place into a booth print. Black & white uses a
- * red-leaning channel mix (smooth, bright skin, like booth paper under flash);
+ * near-neutral channel mix with a slight red lean, so every skin tone keeps
+ * its detail;
  * colour keeps the hues and applies the same tonal work to luminance.
  */
 export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
@@ -210,7 +234,7 @@ export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
   const lum = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
-    lum[i] = (color ? 0.299 * r + 0.587 * g + 0.114 * b : 0.5 * r + 0.4 * g + 0.1 * b) / 255;
+    lum[i] = (color ? 0.299 * r + 0.587 * g + 0.114 * b : 0.36 * r + 0.52 * g + 0.12 * b) / 255;
   }
   const orig = color ? lum.slice() : lum;
 
@@ -219,22 +243,17 @@ export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
   const hi = Math.max(lo + 0.05, percentile(lum, 0.996));
   for (let i = 0; i < n; i++) lum[i] = (lum[i] - lo) / (hi - lo);
 
-  // 2. Denoise + sharpen in one go: detail below a small threshold (sensor
-  // noise, skin texture) is smoothed away; real edges above it (eyelashes,
-  // hair strands, knit) are boosted. Sharpening without the threshold just
-  // turns webcam noise into crunchy speckle.
-  const fine = blurChannel(lum, w, h, Math.max(1, Math.round(w / 480)));
-  const T = 0.02; // noise floor
-  const KEEP = 0.4; // texture kept below it, so skin isn't waxy
-  const GAIN = 2; // sharpening above it
-  for (let i = 0; i < n; i++) {
-    const dlt = lum[i] - fine[i];
-    const a = Math.abs(dlt);
-    lum[i] = fine[i] + Math.sign(dlt) * (a < T ? a * KEEP : T * KEEP + (a - T) * GAIN);
-  }
-  // 3. Local contrast ("clarity"): separates faces from the background.
-  const big = blurChannel(lum, w, h, Math.max(2, Math.round(w * 0.035)));
-  for (let i = 0; i < n; i++) lum[i] += (lum[i] - big[i]) * 0.4;
+  // 2. Sharpening that never removes detail: two unsharp masks, a fine one
+  // (~1px) for brows, lashes and hair strands and a wider one (~3px) for edge
+  // bite. Coring stops sensor noise being amplified; below the threshold a
+  // pixel is left exactly as it was (smoothing it is what smeared eyebrows).
+  const fine = gauss3(lum, w, h);
+  const mid = blurChannel(lum, w, h, Math.max(1, Math.round(w / 360)));
+  for (let i = 0; i < n; i++) lum[i] += core(lum[i] - fine[i], 0.006) * 1.15 + core(lum[i] - mid[i], 0.01) * 0.5;
+
+  // 3. Gentle local contrast at a small radius, so faces pop without halos.
+  const big = blurChannel(lum, w, h, Math.max(2, Math.round(w * 0.02)));
+  for (let i = 0; i < n; i++) lum[i] += (lum[i] - big[i]) * 0.25;
 
   // 4. Tone curve, 5. fine grain, gentle corner falloff.
   const cx = w / 2;
