@@ -1,5 +1,7 @@
 // Per-photo darkroom effects. Each mutates a 2D context in place.
 
+import { applyLut, type Lut } from "./lut";
+
 type Ctx = CanvasRenderingContext2D;
 
 const clamp = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : v);
@@ -226,22 +228,40 @@ function boothCurve(x: number) {
  * near-neutral channel mix with a slight red lean, so every skin tone keeps
  * its detail;
  * colour keeps the hues and applies the same tonal work to luminance.
+ *
+ * With a film `lut`, the stock does the tone and colour instead of our curve:
+ * the range is stretched on RGB, the photo goes through the LUT, then gets
+ * the same sharpening, local contrast and grain.
  */
-export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
+export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean, lut?: Lut) {
   const img = ctx.getImageData(0, 0, w, h);
   const d = img.data;
   const n = w * h;
   const lum = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
-    lum[i] = (color ? 0.299 * r + 0.587 * g + 0.114 * b : 0.36 * r + 0.52 * g + 0.12 * b) / 255;
-  }
-  const orig = color ? lum.slice() : lum;
+  const readLum = (mono: boolean) => {
+    for (let i = 0; i < n; i++) {
+      const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+      lum[i] = (mono ? (r + g + b) / 3 : color ? 0.299 * r + 0.587 * g + 0.114 * b : 0.36 * r + 0.52 * g + 0.12 * b) / 255;
+    }
+  };
+  readLum(false);
 
   // 1. Full range: black point and white point from the image itself.
   const lo = percentile(lum, 0.006);
   const hi = Math.max(lo + 0.05, percentile(lum, 0.996));
-  for (let i = 0; i < n; i++) lum[i] = (lum[i] - lo) / (hi - lo);
+  if (lut) {
+    // Webcams expose flat; give the stock a full-range negative to print from.
+    const k = 1 / (hi - lo);
+    for (let p = 0; p < d.length; p += 4) {
+      d[p] = (d[p] - lo * 255) * k;
+      d[p + 1] = (d[p + 1] - lo * 255) * k;
+      d[p + 2] = (d[p + 2] - lo * 255) * k;
+    }
+    applyLut(d, lut);
+    readLum(!color); // B&W stocks print neutral grey
+  }
+  const orig = color ? lum.slice() : lum;
+  if (!lut) for (let i = 0; i < n; i++) lum[i] = (lum[i] - lo) / (hi - lo);
 
   // 2. Sharpening that never removes detail: two unsharp masks, a fine one
   // (~1px) for brows, lashes and hair strands and a wider one (~3px) for edge
@@ -263,7 +283,7 @@ export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       const t = Math.hypot(x - cx, y - cy) / maxD;
-      let v = boothCurve(lum[i]) * (1 - 0.16 * t * t * t);
+      let v = (lut ? lum[i] : boothCurve(lum[i])) * (1 - 0.16 * t * t * t);
       v += (Math.random() - 0.5) * 0.024 * (0.35 + 2 * v * (1 - v));
       v = Math.min(1, Math.max(0, v));
       const p = i * 4;
@@ -271,6 +291,13 @@ export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
         // Same tonal change, applied additively so hues survive; slightly muted.
         const delta = (v - orig[i]) * 255;
         const r = d[p] + delta, g = d[p + 1] + delta, b = d[p + 2] + delta;
+        if (lut) {
+          // the stock already has its own colour
+          d[p] = clamp(r);
+          d[p + 1] = clamp(g);
+          d[p + 2] = clamp(b);
+          continue;
+        }
         const m = (r + g + b) / 3;
         d[p] = clamp(m + (r - m) * 0.9 + 4);
         d[p + 1] = clamp(m + (g - m) * 0.9 + 1);
@@ -278,7 +305,7 @@ export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
       } else {
         // Silver print: neutral highlights, a touch of warmth in the shadows.
         const val = v * 255;
-        const warm = (1 - v) * 6;
+        const warm = lut ? 0 : (1 - v) * 6;
         d[p] = clamp(val + warm * 0.6);
         d[p + 1] = clamp(val + warm * 0.2);
         d[p + 2] = clamp(val - warm * 0.5);
