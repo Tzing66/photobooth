@@ -5,10 +5,9 @@ const QA: [string, string][] = [
     "How does it work?",
     "Step inside, pick a frame, then either take four photos with your camera (a 3-2-1 countdown before each shot) or upload four of your own. The booth develops them into a vintage strip in about five seconds.",
   ],
-  ["Black & white or colour?", "Use the toggle under the screen before you shoot. B&W gives a punchy, high-contrast print; colour gives a faded film look. Both get grain, dust and an uneven edge burn so every print is unique."],
   [
-    "What's the authentic setting?",
-    "It's tuned on real booth strips: crisp faces, flash-bright skin that keeps its detail, near-black hair and clothes, fine grain and a slightly warm silver tone. Normal is the softer, vintage-faded look. With authentic on you can also pick a film stock (Polaroid, Fuji instant, Ilford, Kodak Tri-X and more, from Pat David's free RawTherapee film simulations, CC BY-SA 4.0) and a flash look that darkens the room behind you.",
+    "Which filter should I pick?",
+    "Vintage is a soft, faded print. Booth is tuned on real booth strips: crisp faces, flash-bright skin that keeps its detail, near-black hair and clothes, and fine grain. Sepia is the Booth print toned brown. The film stocks (Polaroid, Fuji instant, Ilford, Kodak Tri-X and more) are Pat David's free RawTherapee film simulations, CC BY-SA 4.0. Every filter gets grain, dust and an uneven edge burn, so each print is unique.",
   ],
   [
     "Can I use the back camera or a flash?",

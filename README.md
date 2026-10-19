@@ -27,16 +27,19 @@ Elsewhere, `npm run build` writes a static site to `dist/`. Any static host work
 | Route | What happens |
 |---|---|
 | `/` | Outside the booth. The board shows 5 random strips from your gallery. **enter** clears the last session. |
-| `/setup` | Pick frame, backdrop, b&w/colour and normal/authentic against a big preview rendered by the real pipeline. The preview uses sample portraits until you opt in: "try it on me" (3-2-1 camera snapshot) or "use a photo". Then take photos or upload. |
+| `/setup` | Pick frame, filter and backdrop against a big preview rendered by the real pipeline. The preview uses sample portraits until you opt in: "try it on me" (3-2-1 camera snapshot) or "use a photo". Then take photos or upload. |
 | `/takePicture` | Front camera. Each of 4 shots gets a 3-2-1 countdown and a flash, with 2s between shots. |
 | `/upload` | 2×2 slots, file picker (≤25MB), crop locked to 3:4 |
 | `/printStrip` | "Delivered in 5 seconds" while the strip develops in the background, then it slides out of the slot |
 | `/pickup` | save (on phones: share sheet → Save Image → Photos) · share (1080×1920 story image) · print (A4) · restart · ✂ cut into 4 single prints |
 | `/features` | Your gallery of every strip made in this browser |
 
-The set-up screen has two toggles: **b&w ↔ colour** (B&W is the default) and **normal ↔ authentic**. Authentic is tuned on real booth strips: it stretches the tonal range, sharpens edges above a noise threshold (so webcam noise isn't amplified), boosts local contrast, then applies a punchy curve, fine grain and a slightly warm silver tone.
+The set-up screen has one **Filter** list:
 
-With authentic on, you can also pick a **film**. "Booth (original)" is the tuned curve above. The others are real film and instant stocks (Polaroid 667/665, Fuji FP-3000B and FP-100C, Ilford HP5, Kodak Tri-X, Rollei Ortho and Retro 80s), applied as lookup tables with the same sharpening and grain. **Flash look** uses the person cut-out to darken the room behind you, the way a booth flash a foot from your face does.
+- **Vintage** / **Vintage Colour**: a softer, faded print (Vintage is the default).
+- **Booth** / **Booth Colour**: tuned on real booth strips. It stretches the tonal range, sharpens edges above a noise threshold (so webcam noise isn't amplified), boosts local contrast, then applies a punchy curve, fine grain and a slightly warm silver tone.
+- **Sepia**: the Booth print toned brown, like an old chemical booth strip.
+- **Film stocks**: Polaroid 667/665, Fuji FP-3000B, Ilford HP5, Kodak Tri-X, Rollei Ortho and Retro 80s (B&W), and Fuji FP-100C (colour). These are lookup tables applied in place of the Booth curve, with the same sharpening and grain.
 
 On the shoot screen you can switch between the front and back cameras (when the device has both) and turn on a flash. The front camera's flash turns the whole screen white; the back camera uses its torch, where the browser allows it.
 
@@ -46,7 +49,7 @@ The film lookup tables in `public/luts/` are from Pat David's [RawTherapee Film 
 
 - `src/lib/pipeline/`: the darkroom
   - `strip.ts`: layout with randomised spacing and nudges, plus single prints
-  - `effects.ts`: flash glow, edge burn, B&W and film-colour toning, the authentic booth print, dust
+  - `effects.ts`: flash glow, edge burn, B&W and film-colour toning, the booth print (and its sepia tone), dust
   - `lut.ts`: loads HaldCLUT film stocks and applies them with trilinear lookup
   - `textures.ts`: procedural paper/concrete grain
   - `overlays.ts`: stars, hearts, doodle and heart-cutout frames, drawn in code
