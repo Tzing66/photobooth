@@ -8,7 +8,7 @@ const QA: [string, string][] = [
   ["Black & white or colour?", "Use the toggle under the screen before you shoot. B&W gives a punchy, high-contrast print; colour gives a faded film look. Both get grain, dust and an uneven edge burn so every print is unique."],
   [
     "What's the authentic setting?",
-    "It imitates a real booth: a bare flash a foot from your face. Highlights blow out, shadows go inky, the corners fall off, whites glow, and the print gets softer and grainier. Normal keeps more detail.",
+    "It's tuned on real booth strips: crisp faces, flash-bright skin that keeps its detail, near-black hair and clothes, fine grain and a slightly warm silver tone. Normal is the softer, vintage-faded look.",
   ],
   ["Are my photos uploaded anywhere?", "No. Everything happens in your browser. Photos and strips are stored only on this device (IndexedDB), and the gallery lives here too. Clear it any time from the gallery page."],
   ["How do I save my strip?", "On a phone, tap save and choose \"Save Image\" in the share sheet. It goes straight into Photos (browsers can't write to your photo library without that step). On a computer it downloads. Tap the scissors to cut the strip into four single prints, then tap any one to save it."],

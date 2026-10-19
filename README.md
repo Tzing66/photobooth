@@ -27,15 +27,14 @@ Elsewhere, `npm run build` writes a static site to `dist/`. Any static host work
 | Route | What happens |
 |---|---|
 | `/` | Outside the booth. The board shows 5 random strips from your gallery. **enter** clears the last session. |
-| `/frameSelection` | Carousel of 16 frames. The preview is rendered by the real pipeline, in your current b&w/colour mode. |
-| `/select` | take photo / upload photo |
+| `/setup` | Pick frame, backdrop, b&w/colour and normal/authentic against a big preview rendered by the real pipeline. The preview uses sample portraits until you opt in: "try it on me" (3-2-1 camera snapshot) or "use a photo". Then take photos or upload. |
 | `/takePicture` | Front camera. Each of 4 shots gets a 3-2-1 countdown and a flash, with 2s between shots. |
 | `/upload` | 2×2 slots, file picker (≤25MB), crop locked to 3:4 |
 | `/printStrip` | "Delivered in 5 seconds" while the strip develops in the background, then it slides out of the slot |
 | `/pickup` | save (on phones: share sheet → Save Image → Photos) · share (1080×1920 story image) · print (A4) · restart · ✂ cut into 4 single prints |
 | `/features` | Your gallery of every strip made in this browser |
 
-Two toggles sit under the booth screen: **b&w ↔ colour** (B&W is the default) and **normal ↔ authentic**. Authentic adds a harsh close-flash exposure: blown highlights, crushed blacks, flash falloff, halation, softness and heavy grain.
+The set-up screen has two toggles: **b&w ↔ colour** (B&W is the default) and **normal ↔ authentic**. Authentic is tuned on real booth strips: it stretches the tonal range, sharpens edges above a noise threshold (so webcam noise isn't amplified), boosts local contrast, then applies a punchy curve, fine grain and a slightly warm silver tone.
 
 ## Code map
 
