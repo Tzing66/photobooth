@@ -36,15 +36,23 @@ Elsewhere, `npm run build` writes a static site to `dist/`. Any static host work
 
 The set-up screen has two toggles: **b&w ↔ colour** (B&W is the default) and **normal ↔ authentic**. Authentic is tuned on real booth strips: it stretches the tonal range, sharpens edges above a noise threshold (so webcam noise isn't amplified), boosts local contrast, then applies a punchy curve, fine grain and a slightly warm silver tone.
 
+With authentic on, you can also pick a **film**. "Booth (original)" is the tuned curve above. The others are real film and instant stocks (Polaroid 667/665, Fuji FP-3000B and FP-100C, Ilford HP5, Kodak Tri-X, Rollei Ortho and Retro 80s), applied as lookup tables with the same sharpening and grain. **Flash look** uses the person cut-out to darken the room behind you, the way a booth flash a foot from your face does.
+
+On the shoot screen you can switch between the front and back cameras (when the device has both) and turn on a flash. The front camera's flash turns the whole screen white; the back camera uses its torch, where the browser allows it.
+
+The film lookup tables in `public/luts/` are from Pat David's [RawTherapee Film Simulation collection](https://patdavid.net/2015/03/film-emulation-in-rawtherapee/), under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (resampled to 64-step cubes; see `public/luts/CREDITS.txt`).
+
 ## Code map
 
 - `src/lib/pipeline/`: the darkroom
   - `strip.ts`: layout with randomised spacing and nudges, plus single prints
-  - `effects.ts`: flash glow, edge burn, B&W and film-colour toning, dust
+  - `effects.ts`: flash glow, edge burn, B&W and film-colour toning, the authentic booth print, dust
+  - `lut.ts`: loads HaldCLUT film stocks and applies them with trilinear lookup
   - `textures.ts`: procedural paper/concrete grain
   - `overlays.ts`: stars, hearts, doodle and heart-cutout frames, drawn in code
   - `samples.ts`: frame previews
 - `src/lib/frames.ts`: frame catalogue (colours, captions) and the localStorage settings
+- `src/lib/camera.ts`: front/back camera choice and the back camera's torch
 - `src/lib/storage.ts`: IndexedDB for the session photos, strip, singles and gallery
 - `src/themes/`: each theme is a `ThemeKit` (see `types.ts`) of decor components only. Pages hold all behaviour, so a new theme is just a new file in `registry.ts`.
 - `src/pages/`: one component per route
