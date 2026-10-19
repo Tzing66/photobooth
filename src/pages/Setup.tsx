@@ -43,7 +43,7 @@ function LiveSnap({ onShot, onCancel, onError, height }: { onShot: (url: string)
     const timers: ReturnType<typeof setTimeout>[] = [];
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 720 }, height: { ideal: 960 }, facingMode: "user" } });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1440 }, facingMode: "user" } });
         const video = videoRef.current;
         if (cancelled || !video) return;
         video.srcObject = stream;
@@ -92,7 +92,7 @@ function readPhoto(file: File): Promise<string> {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const k = Math.min(1, 1400 / Math.max(img.width, img.height));
+      const k = Math.min(1, 2000 / Math.max(img.width, img.height));
       const c = document.createElement("canvas");
       c.width = Math.round(img.width * k);
       c.height = Math.round(img.height * k);

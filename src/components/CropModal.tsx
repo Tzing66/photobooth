@@ -5,7 +5,6 @@ import "react-image-crop/dist/ReactCrop.css";
 
 const MAX_SIDE = 2400; // keep memory sane on phones
 const MAX_CANVAS = 8192;
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 /** Largest centred 3:4 crop that fits the displayed image. */
 function initialCrop(w: number, h: number): Crop {
@@ -60,7 +59,7 @@ export default function CropModal({ imageUrl, onComplete, onCancel, onError }: P
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, crop.x * sx, crop.y * sy, crop.width * sx, crop.height * sy, 0, 0, w, h);
-      const url = c.toDataURL("image/jpeg", isMobile ? 0.8 : 0.9);
+      const url = c.toDataURL("image/jpeg", 0.93);
       if (!url || url === "data:,") throw new Error("Canvas produced empty data URL");
       c.width = c.height = 1; // release memory early (Safari)
       onComplete(url);

@@ -57,7 +57,8 @@ export default function TakePicture() {
     (async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 540 }, height: { ideal: 720 }, facingMode: "user" },
+          // Ask for the camera's full resolution; the strip crops to 3:4 itself.
+          video: { width: { ideal: 1920 }, height: { ideal: 1440 }, facingMode: "user" },
         });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -99,7 +100,7 @@ export default function TakePicture() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL("image/jpeg", 0.8);
+    return canvas.toDataURL("image/jpeg", 0.95);
   };
 
   const snap = (i: number) => {
