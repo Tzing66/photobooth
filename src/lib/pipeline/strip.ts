@@ -4,7 +4,7 @@
 // Spacing, photo placement and edge burn are all randomised a little on
 // every print so each strip looks hand-assembled.
 
-import { type BackdropType, type FilmType, type FrameType, filmDef, frameDef } from "../frames";
+import { type BackdropType, type FilterDef, type FilterType, type FrameType, filterDef, frameDef } from "../frames";
 import { castsShadow, paintBackdrop } from "./backdrops";
 import { personMask } from "./segment";
 import { blackAndWhite, boothPrint, dust, edgeBurn, filmColor, flashGlow } from "./effects";
@@ -62,11 +62,10 @@ function coverCrop(img: HTMLImageElement, aspect: number) {
 
 interface Look {
   paper: string;
-  color: boolean;
-  authentic: boolean;
+  filter: FilterDef;
   texture: HTMLCanvasElement;
   backdrop: BackdropType;
-  /** Film stock for the authentic look; none = our own booth curve. */
+  /** The filter's film stock, loaded. */
   lut?: Lut;
 }
 
@@ -122,15 +121,16 @@ function placeOnBackdrop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, m
 }
 
 /** Render one developed photo of size w×h. */
-function develop(img: HTMLImageElement, w: number, h: number, { paper, color, authentic, texture, backdrop, lut }: Look, mask?: HTMLCanvasElement) {
+function develop(img: HTMLImageElement, w: number, h: number, { paper, filter, texture, backdrop, lut }: Look, mask?: HTMLCanvasElement) {
   const { c, ctx } = canvas(w, h);
   if (mask && backdrop !== "none") placeOnBackdrop(ctx, img, mask, w, h, backdrop);
   else {
     const [sx, sy, sw, sh] = coverCrop(img, w / h);
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
   }
-  if (authentic) {
-    boothPrint(ctx, w, h, color, lut);
+  const { color } = filter;
+  if (filter.look === "booth") {
+    boothPrint(ctx, w, h, color, lut, filter.sepia);
     applyTexture(ctx, texture, 0, 0, w, h, 0.06); // just a hint of paper
     edgeBurn(ctx, 0, 0, w, h, paper);
     return c;
@@ -168,18 +168,15 @@ export interface StripResult {
 
 export interface StripOptions {
   frame: FrameType;
-  color: boolean;
-  /** Harsh close-flash booth look (see effects.ts). */
-  authentic?: boolean;
+  /** The look: vintage, booth or a film stock (see FILTERS). */
+  filter: FilterType;
   /** Replace the real background behind the person. */
   backdrop?: BackdropType;
   /** Skip the four single prints (used when rendering frame previews). */
   stripOnly?: boolean;
-  /** Authentic only: film stock LUT ("booth" = our own curve). */
-  film?: FilmType;
 }
 
-export async function createPhotostrip(images: string[], { frame, color, authentic = false, backdrop = "none", stripOnly, film = "booth" }: StripOptions): Promise<StripResult> {
+export async function createPhotostrip(images: string[], { frame, filter: filterType, backdrop = "none", stripOnly }: StripOptions): Promise<StripResult> {
   if (images.length !== 4 || images.some((i) => !i)) throw new Error("Invalid images array");
 
   const def = frameDef(frame);
@@ -191,8 +188,8 @@ export async function createPhotostrip(images: string[], { frame, color, authent
 
   const loaded = await Promise.all(images.map((src, i) => loadImage(src, `image ${i}`)));
   const masks = backdrop === "none" ? [] : await Promise.all(loaded.map(personMask));
-  const lutUrl = authentic ? filmDef(film, color).lut : undefined;
-  const lut = lutUrl ? await loadLut(lutUrl) : undefined;
+  const filter = filterDef(filterType);
+  const lut = filter.lut ? await loadLut(filter.lut) : undefined;
 
   // --- layout ---
   const gap = randInt(5, 10) * S + (captioned ? 20 * S : 0) + (extra.gap ?? 0) * S;
@@ -209,7 +206,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
 
   const photoTexture = randomTexture();
   const paperTexture = randomTexture();
-  const look: Look = { paper, color, authentic, texture: photoTexture, backdrop, lut };
+  const look: Look = { paper, filter, texture: photoTexture, backdrop, lut };
   applyTexture(ctx, paperTexture, 0, 0, width, height, 0.1, true);
 
   const cells: Cell[] = [];

@@ -5,22 +5,17 @@ import { FlipIcon } from "../components/CameraIcons";
 import { getFacing, hasSeveralCameras, isMirrored, openCamera, setFacing, type Facing } from "../lib/camera";
 import {
   BACKDROPS,
+  FILTERS,
   FRAMES,
   type BackdropType,
-  type FilmType,
+  type FilterType,
   type FrameType,
-  filmDef,
-  filmsFor,
   getBackdrop,
-  getFilm,
+  getFilter,
   getFrame,
-  isAuthentic,
-  isColorMode,
   needsShadow,
-  setAuthentic,
   setBackdrop,
-  setColorMode,
-  setFilm,
+  setFilter,
   setFrame,
 } from "../lib/frames";
 import { placeholderPortraits } from "../lib/pipeline/samples";
@@ -31,10 +26,8 @@ import { useTheme } from "../themes/ThemeContext";
 
 interface Settings {
   frame: FrameType;
-  color: boolean;
-  authentic: boolean;
+  filter: FilterType;
   backdrop: BackdropType;
-  film: FilmType;
 }
 
 /**
@@ -187,7 +180,7 @@ function GoButtons({ onCamera, onUpload }: { onCamera: () => void; onUpload: () 
 export default function Setup() {
   const navigate = useNavigate();
   const { kit } = useTheme();
-  const [s, setS] = useState<Settings>(() => ({ frame: getFrame(), color: isColorMode(), authentic: isAuthentic(), backdrop: getBackdrop(), film: getFilm() }));
+  const [s, setS] = useState<Settings>(() => ({ frame: getFrame(), filter: getFilter(), backdrop: getBackdrop() }));
   const [subject, setSubject] = useState<string[]>(placeholderPortraits);
   const [source, setSource] = useState<"samples" | "camera" | "photo">("samples");
   const [snapping, setSnapping] = useState(false);
@@ -236,14 +229,7 @@ export default function Setup() {
     const t = setTimeout(async () => {
       try {
         if (s.backdrop !== "none") setNote((n) => n ?? "Loading the cut-out model (first time only)…");
-        const result = await createPhotostrip(subject, {
-          frame: s.frame,
-          color: s.color,
-          authentic: s.authentic,
-          backdrop: s.backdrop,
-          film: s.film,
-          stripOnly: true,
-        });
+        const result = await createPhotostrip(subject, { frame: s.frame, filter: s.filter, backdrop: s.backdrop, stripOnly: true });
         const zoom = await zoomOnFirst(result);
         if (id !== renderId.current) return;
         setPreview({ strip: result.strip, zoom });
@@ -262,10 +248,8 @@ export default function Setup() {
     const next = { ...s, ...patch };
     setS(next);
     setFrame(next.frame);
-    setColorMode(next.color);
-    setAuthentic(next.authentic);
+    setFilter(next.filter);
     setBackdrop(next.backdrop);
-    setFilm(next.film);
     if (patch.backdrop && patch.backdrop !== "none") preloadSegmenter().catch(() => null);
   };
 
@@ -348,6 +332,18 @@ export default function Setup() {
           </div>
 
           <div>
+            <h2 className="font-display mb-2 text-sm md:text-base">Filter</h2>
+            <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
+              {FILTERS.map((f) => (
+                <button key={f.type} className="chip" aria-pressed={s.filter === f.type} onClick={() => update({ filter: f.type })}>
+                  <span className="chip-swatch" style={{ background: f.swatch }} />
+                  {f.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <h2 className="font-display mb-2 text-sm md:text-base">Backdrop</h2>
             <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
               {BACKDROPS.map((b) => (
@@ -358,24 +354,6 @@ export default function Setup() {
               ))}
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-            <kit.Toggle on={s.color} onToggle={() => update({ color: !s.color })} left="b&w" right="color" label="Toggle colour mode" />
-            <kit.Toggle on={s.authentic} onToggle={() => update({ authentic: !s.authentic })} left="normal" right="authentic" label="Toggle authentic booth look" />
-          </div>
-
-          {s.authentic && (
-            <div>
-              <h2 className="font-display mb-2 text-sm md:text-base">Film</h2>
-              <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
-                {filmsFor(s.color).map((f) => (
-                  <button key={f.type} className="chip px-3!" aria-pressed={filmDef(s.film, s.color).type === f.type} onClick={() => update({ film: f.type })}>
-                    {f.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="bg-paper sticky bottom-0 -mx-5 -mb-5 hidden gap-3 rounded-b-[inherit] px-5 pt-3 pb-5 md:flex">
             <GoButtons onCamera={go("/takePicture")} onUpload={go("/upload")} />

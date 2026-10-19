@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { BACKDROPS, filmDef, frameDef, getBackdrop, getFilm, getFrame, isAuthentic, isColorMode } from "../lib/frames";
+import { BACKDROPS, filterDef, frameDef, getBackdrop, getFilter, getFrame } from "../lib/frames";
 import { useTheme } from "../themes/ThemeContext";
 
 interface Props {
@@ -20,8 +20,7 @@ function Summary({ locked }: { locked: boolean }) {
   const backdrop = getBackdrop();
   const parts = [
     frameDef(getFrame()).name,
-    isColorMode() ? "Colour" : "B&W",
-    ...(isAuthentic() ? [filmDef(getFilm(), isColorMode()).name] : ["Normal"]),
+    filterDef(getFilter()).name,
     ...(backdrop === "none" ? [] : [BACKDROPS.find((b) => b.type === backdrop)!.name]),
   ];
   return (

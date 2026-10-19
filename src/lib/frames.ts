@@ -58,12 +58,17 @@ export const BACKDROPS: BackdropDef[] = [
 ];
 
 /**
- * Film stocks for the authentic look. "booth" is our own tuned curve (the
- * original authentic look); the rest are HaldCLUTs from Pat David's RawTherapee
- * Film Simulation collection (CC BY-SA 4.0), in public/luts/.
+ * Every look in one list. "vintage" is the faded print (the original
+ * "normal" look); "booth" is our crisp booth print, either with its own tone
+ * curve or through a film stock. Film stocks are HaldCLUTs from Pat David's
+ * RawTherapee Film Simulation collection (CC BY-SA 4.0), in public/luts/.
  */
-export type FilmType =
+export type FilterType =
+  | "vintage"
+  | "vintage-color"
   | "booth"
+  | "booth-color"
+  | "sepia"
   | "polaroid-667"
   | "polaroid-665-3"
   | "fuji-fp-3000b-hc"
@@ -73,40 +78,52 @@ export type FilmType =
   | "rollei-retro-80s"
   | "fuji-fp-100c-3";
 
-export interface FilmDef {
-  type: FilmType;
+export interface FilterDef {
+  type: FilterType;
   name: string;
-  /** Which tone mode it belongs to; "both" shows in b&w and colour. */
-  mode: "bw" | "color" | "both";
+  color: boolean;
+  look: "vintage" | "booth";
   lut?: string;
+  /** Brown-toned silver print. */
+  sepia?: boolean;
+  /** CSS background for the picker swatch. */
+  swatch: string;
 }
 
-const lut = (slug: FilmType) => `${import.meta.env.BASE_URL}luts/${slug}.png`;
+const lut = (slug: FilterType) => `${import.meta.env.BASE_URL}luts/${slug}.png`;
 
-export const FILMS: FilmDef[] = [
-  { type: "booth", name: "Booth (original)", mode: "both" },
-  { type: "polaroid-667", name: "Polaroid 667", mode: "bw", lut: lut("polaroid-667") },
-  { type: "polaroid-665-3", name: "Polaroid 665", mode: "bw", lut: lut("polaroid-665-3") },
-  { type: "fuji-fp-3000b-hc", name: "Fuji FP-3000B HC", mode: "bw", lut: lut("fuji-fp-3000b-hc") },
-  { type: "ilford-hp5-plus-400", name: "Ilford HP5", mode: "bw", lut: lut("ilford-hp5-plus-400") },
-  { type: "kodak-tri-x-400-2", name: "Kodak Tri-X", mode: "bw", lut: lut("kodak-tri-x-400-2") },
-  { type: "rollei-ortho-25", name: "Rollei Ortho", mode: "bw", lut: lut("rollei-ortho-25") },
-  { type: "rollei-retro-80s", name: "Rollei Retro 80s", mode: "bw", lut: lut("rollei-retro-80s") },
-  { type: "fuji-fp-100c-3", name: "Fuji FP-100C", mode: "color", lut: lut("fuji-fp-100c-3") },
+const SWATCH = {
+  soft: "linear-gradient(135deg,#3a3835,#d9d5ce)",
+  hard: "linear-gradient(135deg,#050505 20%,#f4f4f2 80%)",
+  color: "linear-gradient(135deg,#7a4a3a,#d9a27a 50%,#9fb7c2)",
+  sepia: "linear-gradient(135deg,#2a1a0e 15%,#a5774d 50%,#f3e4c8 85%)",
+};
+
+export const FILTERS: FilterDef[] = [
+  { type: "vintage", name: "Vintage", color: false, look: "vintage", swatch: SWATCH.soft },
+  { type: "vintage-color", name: "Vintage Colour", color: true, look: "vintage", swatch: SWATCH.color },
+  { type: "booth", name: "Booth", color: false, look: "booth", swatch: SWATCH.hard },
+  { type: "booth-color", name: "Booth Colour", color: true, look: "booth", swatch: SWATCH.color },
+  { type: "sepia", name: "Sepia", color: false, look: "booth", sepia: true, swatch: SWATCH.sepia },
+  { type: "polaroid-667", name: "Polaroid 667", color: false, look: "booth", lut: lut("polaroid-667"), swatch: SWATCH.hard },
+  { type: "polaroid-665-3", name: "Polaroid 665", color: false, look: "booth", lut: lut("polaroid-665-3"), swatch: SWATCH.hard },
+  { type: "fuji-fp-3000b-hc", name: "Fuji FP-3000B", color: false, look: "booth", lut: lut("fuji-fp-3000b-hc"), swatch: SWATCH.hard },
+  { type: "ilford-hp5-plus-400", name: "Ilford HP5", color: false, look: "booth", lut: lut("ilford-hp5-plus-400"), swatch: SWATCH.hard },
+  { type: "kodak-tri-x-400-2", name: "Kodak Tri-X", color: false, look: "booth", lut: lut("kodak-tri-x-400-2"), swatch: SWATCH.hard },
+  { type: "rollei-ortho-25", name: "Rollei Ortho", color: false, look: "booth", lut: lut("rollei-ortho-25"), swatch: SWATCH.hard },
+  { type: "rollei-retro-80s", name: "Rollei Retro 80s", color: false, look: "booth", lut: lut("rollei-retro-80s"), swatch: SWATCH.hard },
+  { type: "fuji-fp-100c-3", name: "Fuji FP-100C", color: true, look: "booth", lut: lut("fuji-fp-100c-3"), swatch: SWATCH.color },
 ];
 
-export const filmsFor = (color: boolean) => FILMS.filter((f) => f.mode === "both" || f.mode === (color ? "color" : "bw"));
-
-/** The stock to use; one that doesn't fit the tone mode falls back to the original booth look. */
-export const filmDef = (t: FilmType, color: boolean) => filmsFor(color).find((f) => f.type === t) ?? FILMS[0];
+export const filterDef = (t: FilterType) => FILTERS.find((f) => f.type === t) ?? FILTERS[0];
 
 export const frameDef = (t: FrameType) => FRAMES.find((f) => f.type === t) ?? FRAMES[0];
 
 const FRAME_KEY = "photobooth_frame";
-const FILTER_KEY = "photobooth_filter";
-const LOOK_KEY = "photobooth_look";
+const PRINT_KEY = "photobooth_print";
 const BACKDROP_KEY = "photobooth_backdrop";
-const FILM_KEY = "photobooth_film";
+// Before filters were one list: b&w/colour, normal/authentic and a film.
+const LEGACY_KEYS = ["photobooth_filter", "photobooth_look", "photobooth_film", "photobooth_falloff"];
 
 export function getFrame(): FrameType {
   const v = localStorage.getItem(FRAME_KEY);
@@ -114,13 +131,17 @@ export function getFrame(): FrameType {
 }
 export const setFrame = (t: FrameType) => localStorage.setItem(FRAME_KEY, t);
 
-/** Black & white is the default, like a real booth. */
-export const isColorMode = () => localStorage.getItem(FILTER_KEY) === "color";
-export const setColorMode = (color: boolean) => localStorage.setItem(FILTER_KEY, color ? "color" : "bw");
-
-/** "authentic" = harsh close-flash booth exposure; "normal" is the default. */
-export const isAuthentic = () => localStorage.getItem(LOOK_KEY) === "authentic";
-export const setAuthentic = (on: boolean) => localStorage.setItem(LOOK_KEY, on ? "authentic" : "normal");
+/** Vintage B&W is the default; older saved settings map onto the matching filter. */
+export function getFilter(): FilterType {
+  const v = localStorage.getItem(PRINT_KEY);
+  if (FILTERS.some((f) => f.type === v)) return v as FilterType;
+  const color = localStorage.getItem("photobooth_filter") === "color";
+  if (localStorage.getItem("photobooth_look") !== "authentic") return color ? "vintage-color" : "vintage";
+  const film = FILTERS.find((f) => f.type === localStorage.getItem("photobooth_film") && f.lut);
+  if (film && film.color === color) return film.type;
+  return color ? "booth-color" : "booth";
+}
+export const setFilter = (t: FilterType) => localStorage.setItem(PRINT_KEY, t);
 
 export function getBackdrop(): BackdropType {
   const v = localStorage.getItem(BACKDROP_KEY);
@@ -128,18 +149,8 @@ export function getBackdrop(): BackdropType {
 }
 export const setBackdrop = (t: BackdropType) => localStorage.setItem(BACKDROP_KEY, t);
 
-export function getFilm(): FilmType {
-  const v = localStorage.getItem(FILM_KEY);
-  return FILMS.some((f) => f.type === v) ? (v as FilmType) : "booth";
-}
-export const setFilm = (t: FilmType) => localStorage.setItem(FILM_KEY, t);
-
 export function resetSettings() {
-  localStorage.removeItem(FILM_KEY);
-  localStorage.removeItem(FRAME_KEY);
-  localStorage.removeItem(FILTER_KEY);
-  localStorage.removeItem(LOOK_KEY);
-  localStorage.removeItem(BACKDROP_KEY);
+  [FRAME_KEY, PRINT_KEY, BACKDROP_KEY, ...LEGACY_KEYS].forEach((k) => localStorage.removeItem(k));
 }
 
 /** Strips on light paper get a drop shadow when displayed; black ones don't. */
