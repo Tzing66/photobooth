@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../components/Spinner";
 import { showError } from "../lib/errors";
-import { getBackdrop, getFilm, getFrame, isAuthentic, isColorMode, isFalloff, needsShadow } from "../lib/frames";
+import { getBackdrop, getFilm, getFrame, isAuthentic, isColorMode, needsShadow } from "../lib/frames";
 import { createPhotostrip } from "../lib/pipeline/strip";
 import { StorageFullError, addToGallery, getAllPhotos, getPhotostrip, isComplete, savePhotostrip, saveIndividualPhotos } from "../lib/storage";
 import { useTheme } from "../themes/ThemeContext";
@@ -54,7 +54,6 @@ export default function PrintStrip() {
           authentic: isAuthentic(),
           backdrop: getBackdrop(),
           film: getFilm(),
-          flash: isFalloff(),
         });
         await savePhotostrip(result.strip);
         await saveIndividualPhotos(result.singles);

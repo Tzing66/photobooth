@@ -68,8 +68,6 @@ interface Look {
   backdrop: BackdropType;
   /** Film stock for the authentic look; none = our own booth curve. */
   lut?: Lut;
-  /** Authentic only: light the person like a close flash, let the room fall off. */
-  falloff: boolean;
 }
 
 function alphaCanvas(w: number, h: number) {
@@ -123,34 +121,8 @@ function placeOnBackdrop(ctx: CanvasRenderingContext2D, img: HTMLImageElement, m
   ctx.drawImage(person.c, 0, 0);
 }
 
-/**
- * A booth flash is a foot from your face: you come out bright and flat while
- * the room behind drops towards grey. Darken everything the mask says isn't
- * you, and lift the person a little.
- */
-function flashFalloff(ctx: CanvasRenderingContext2D, img: HTMLImageElement, mask: HTMLCanvasElement, w: number, h: number) {
-  const m = cropMask(img, mask, w, h);
-  const layer = alphaCanvas(w, h);
-  // background: darken
-  layer.ctx.fillStyle = "rgba(0,0,0,0.45)";
-  layer.ctx.fillRect(0, 0, w, h);
-  layer.ctx.globalCompositeOperation = "destination-out";
-  layer.ctx.drawImage(m.c, 0, 0);
-  ctx.drawImage(layer.c, 0, 0);
-  // person: flat, bright light
-  layer.ctx.globalCompositeOperation = "copy";
-  layer.ctx.drawImage(m.c, 0, 0);
-  layer.ctx.globalCompositeOperation = "source-in";
-  layer.ctx.fillStyle = "rgba(255,255,255,0.12)";
-  layer.ctx.fillRect(0, 0, w, h);
-  ctx.save();
-  ctx.globalCompositeOperation = "screen";
-  ctx.drawImage(layer.c, 0, 0);
-  ctx.restore();
-}
-
 /** Render one developed photo of size w×h. */
-function develop(img: HTMLImageElement, w: number, h: number, { paper, color, authentic, texture, backdrop, lut, falloff }: Look, mask?: HTMLCanvasElement) {
+function develop(img: HTMLImageElement, w: number, h: number, { paper, color, authentic, texture, backdrop, lut }: Look, mask?: HTMLCanvasElement) {
   const { c, ctx } = canvas(w, h);
   if (mask && backdrop !== "none") placeOnBackdrop(ctx, img, mask, w, h, backdrop);
   else {
@@ -158,7 +130,6 @@ function develop(img: HTMLImageElement, w: number, h: number, { paper, color, au
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
   }
   if (authentic) {
-    if (falloff && mask) flashFalloff(ctx, img, mask, w, h);
     boothPrint(ctx, w, h, color, lut);
     applyTexture(ctx, texture, 0, 0, w, h, 0.06); // just a hint of paper
     edgeBurn(ctx, 0, 0, w, h, paper);
@@ -206,11 +177,9 @@ export interface StripOptions {
   stripOnly?: boolean;
   /** Authentic only: film stock LUT ("booth" = our own curve). */
   film?: FilmType;
-  /** Authentic only: close-flash falloff on the background. */
-  flash?: boolean;
 }
 
-export async function createPhotostrip(images: string[], { frame, color, authentic = false, backdrop = "none", stripOnly, film = "booth", flash = false }: StripOptions): Promise<StripResult> {
+export async function createPhotostrip(images: string[], { frame, color, authentic = false, backdrop = "none", stripOnly, film = "booth" }: StripOptions): Promise<StripResult> {
   if (images.length !== 4 || images.some((i) => !i)) throw new Error("Invalid images array");
 
   const def = frameDef(frame);
@@ -221,8 +190,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
   if (def.overlay) await ensureOverlayFonts();
 
   const loaded = await Promise.all(images.map((src, i) => loadImage(src, `image ${i}`)));
-  const falloff = authentic && flash;
-  const masks = backdrop === "none" && !falloff ? [] : await Promise.all(loaded.map(personMask));
+  const masks = backdrop === "none" ? [] : await Promise.all(loaded.map(personMask));
   const lutUrl = authentic ? filmDef(film, color).lut : undefined;
   const lut = lutUrl ? await loadLut(lutUrl) : undefined;
 
@@ -241,7 +209,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
 
   const photoTexture = randomTexture();
   const paperTexture = randomTexture();
-  const look: Look = { paper, color, authentic, texture: photoTexture, backdrop, lut, falloff };
+  const look: Look = { paper, color, authentic, texture: photoTexture, backdrop, lut };
   applyTexture(ctx, paperTexture, 0, 0, width, height, 0.1, true);
 
   const cells: Cell[] = [];

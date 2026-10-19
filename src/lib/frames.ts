@@ -107,7 +107,6 @@ const FILTER_KEY = "photobooth_filter";
 const LOOK_KEY = "photobooth_look";
 const BACKDROP_KEY = "photobooth_backdrop";
 const FILM_KEY = "photobooth_film";
-const FALLOFF_KEY = "photobooth_falloff";
 
 export function getFrame(): FrameType {
   const v = localStorage.getItem(FRAME_KEY);
@@ -135,13 +134,8 @@ export function getFilm(): FilmType {
 }
 export const setFilm = (t: FilmType) => localStorage.setItem(FILM_KEY, t);
 
-/** Flash falloff (darker room behind you); off by default. */
-export const isFalloff = () => localStorage.getItem(FALLOFF_KEY) === "on";
-export const setFalloff = (on: boolean) => localStorage.setItem(FALLOFF_KEY, on ? "on" : "off");
-
 export function resetSettings() {
   localStorage.removeItem(FILM_KEY);
-  localStorage.removeItem(FALLOFF_KEY);
   localStorage.removeItem(FRAME_KEY);
   localStorage.removeItem(FILTER_KEY);
   localStorage.removeItem(LOOK_KEY);

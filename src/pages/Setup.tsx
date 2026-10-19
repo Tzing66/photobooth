@@ -16,12 +16,10 @@ import {
   getFrame,
   isAuthentic,
   isColorMode,
-  isFalloff,
   needsShadow,
   setAuthentic,
   setBackdrop,
   setColorMode,
-  setFalloff,
   setFilm,
   setFrame,
 } from "../lib/frames";
@@ -37,7 +35,6 @@ interface Settings {
   authentic: boolean;
   backdrop: BackdropType;
   film: FilmType;
-  falloff: boolean;
 }
 
 /**
@@ -190,7 +187,7 @@ function GoButtons({ onCamera, onUpload }: { onCamera: () => void; onUpload: () 
 export default function Setup() {
   const navigate = useNavigate();
   const { kit } = useTheme();
-  const [s, setS] = useState<Settings>(() => ({ frame: getFrame(), color: isColorMode(), authentic: isAuthentic(), backdrop: getBackdrop(), film: getFilm(), falloff: isFalloff() }));
+  const [s, setS] = useState<Settings>(() => ({ frame: getFrame(), color: isColorMode(), authentic: isAuthentic(), backdrop: getBackdrop(), film: getFilm() }));
   const [subject, setSubject] = useState<string[]>(placeholderPortraits);
   const [source, setSource] = useState<"samples" | "camera" | "photo">("samples");
   const [snapping, setSnapping] = useState(false);
@@ -238,15 +235,13 @@ export default function Setup() {
     setBusy(true);
     const t = setTimeout(async () => {
       try {
-        if (s.backdrop !== "none" || (s.authentic && s.falloff && source !== "samples")) setNote((n) => n ?? "Loading the cut-out model (first time only)…");
+        if (s.backdrop !== "none") setNote((n) => n ?? "Loading the cut-out model (first time only)…");
         const result = await createPhotostrip(subject, {
           frame: s.frame,
           color: s.color,
           authentic: s.authentic,
           backdrop: s.backdrop,
           film: s.film,
-          // the cut-out model can't find a person in the grey silhouettes
-          flash: s.falloff && source !== "samples",
           stripOnly: true,
         });
         const zoom = await zoomOnFirst(result);
@@ -261,7 +256,7 @@ export default function Setup() {
       }
     }, 120);
     return () => clearTimeout(t);
-  }, [subject, s, source]);
+  }, [subject, s]);
 
   const update = (patch: Partial<Settings>) => {
     const next = { ...s, ...patch };
@@ -271,8 +266,7 @@ export default function Setup() {
     setAuthentic(next.authentic);
     setBackdrop(next.backdrop);
     setFilm(next.film);
-    setFalloff(next.falloff);
-    if ((patch.backdrop && patch.backdrop !== "none") || patch.falloff) preloadSegmenter().catch(() => null);
+    if (patch.backdrop && patch.backdrop !== "none") preloadSegmenter().catch(() => null);
   };
 
   const go = (path: string) => async () => {
@@ -380,13 +374,6 @@ export default function Setup() {
                   </button>
                 ))}
               </div>
-              <div className="mt-3">
-                <kit.Toggle on={s.falloff} onToggle={() => update({ falloff: !s.falloff })} left="room light" right="flash look" label="Toggle flash falloff" />
-              </div>
-              <p className="mt-1 text-xs text-muted">
-                Flash darkens the room behind you, like a booth flash a foot from your face.
-                {source === "samples" && " Try it on yourself or a photo to see it."}
-              </p>
             </div>
           )}
 
