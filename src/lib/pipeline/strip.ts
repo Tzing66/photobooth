@@ -7,7 +7,7 @@
 import { type BackdropType, type FrameType, frameDef } from "../frames";
 import { castsShadow, paintBackdrop } from "./backdrops";
 import { personMask } from "./segment";
-import { blackAndWhite, bloom, dust, edgeBurn, filmColor, flashGlow, harshFlash, heavyGrain, soften } from "./effects";
+import { blackAndWhite, boothPrint, dust, edgeBurn, filmColor, flashGlow } from "./effects";
 import { drawOverlay, ensureOverlayFonts, type Cell } from "./overlays";
 import { applyTexture, randomTexture } from "./textures";
 
@@ -120,16 +120,16 @@ function develop(img: HTMLImageElement, w: number, h: number, { paper, color, au
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
   }
   if (authentic) {
-    soften(ctx, w, h);
-    harshFlash(ctx, w, h);
-    bloom(ctx, w, h);
+    boothPrint(ctx, w, h, color);
+    applyTexture(ctx, texture, 0, 0, w, h, 0.06); // just a hint of paper
+    edgeBurn(ctx, 0, 0, w, h, paper);
+    return c;
   }
   if (!color) flashGlow(ctx, 0, 0, w, h);
-  applyTexture(ctx, texture, 0, 0, w, h, authentic ? 0.18 : 0.25);
+  applyTexture(ctx, texture, 0, 0, w, h);
   edgeBurn(ctx, 0, 0, w, h, paper);
   if (color) filmColor(ctx, w, h);
   else blackAndWhite(ctx, w, h);
-  if (authentic) heavyGrain(ctx, w, h);
   return c;
 }
 

@@ -140,92 +140,131 @@ export function filmColor(ctx: Ctx, w: number, h: number) {
   ctx.putImageData(img, 0, 0);
 }
 
-// --- "authentic" booth look ---------------------------------------------------
-// A real booth fires a bare flash about a foot from your face onto fast paper:
-// faces blow out, shadows crush, light falls off hard toward the frame edges,
-// highlights bleed, and the print is soft and grainy. These run before (soften,
-// harshFlash, bloom) and after (heavyGrain) the normal toning.
+// --- "authentic" booth print ------------------------------------------------
+// Modelled on real booth strips: crisp faces, flash-bright skin that keeps its
+// detail, near-black hair and clothes, a lit curtain behind, fine grain and a
+// neutral-to-warm tone. Webcam frames arrive soft, flat and noisy, so this has
+// to *create* the punch: stretch the range, lift local contrast, sharpen fine
+// edges, then a strong but smooth curve.
 
-/** Lens/paper softness: cheap blur by down- then up-sampling. */
-export function soften(ctx: Ctx, w: number, h: number, k = 0.45) {
-  const small = document.createElement("canvas");
-  small.width = Math.max(1, Math.round(w * k));
-  small.height = Math.max(1, Math.round(h * k));
-  const sctx = small.getContext("2d")!;
-  sctx.imageSmoothingQuality = "high";
-  sctx.drawImage(ctx.canvas, 0, 0, small.width, small.height);
-  ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(small, 0, 0, w, h);
-  ctx.restore();
-}
-
-/** Over-exposure + hard S-curve, brightest slightly above centre where the face sits. */
-export function harshFlash(ctx: Ctx, w: number, h: number) {
-  const img = ctx.getImageData(0, 0, w, h);
-  const d = img.data;
-  const cx = w / 2;
-  const cy = h * 0.42;
-  const maxD = Math.hypot(w / 2, h * 0.58);
-  const curve = new Float32Array(256);
-  for (let i = 0; i < 256; i++) {
-    const v = Math.min(1, (i / 255) * 1.3); // ~1/3 stop over
-    const s = v < 0.5 ? 2 * v * v : 1 - 2 * (1 - v) * (1 - v); // S-curve
-    curve[i] = (v * 0.35 + s * 0.65) * 255;
-  }
-  for (let y = 0; y < h; y++) {
+/** Separable box blur on one channel; three passes approximate a gaussian. */
+function blurChannel(src: Float32Array, w: number, h: number, r: number): Float32Array {
+  if (r < 1) return src.slice();
+  let a = src.slice();
+  let b = new Float32Array(src.length);
+  const norm = 1 / (2 * r + 1);
+  for (let pass = 0; pass < 3; pass++) {
+    // horizontal: a -> b
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      let acc = a[row] * (r + 1);
+      for (let x = 1; x <= r; x++) acc += a[row + Math.min(x, w - 1)];
+      for (let x = 0; x < w; x++) {
+        b[row + x] = acc * norm;
+        acc += a[row + Math.min(x + r + 1, w - 1)] - a[row + Math.max(x - r, 0)];
+      }
+    }
+    // vertical: b -> a
     for (let x = 0; x < w; x++) {
-      const t = Math.hypot(x - cx, y - cy) / maxD;
-      const falloff = 1.08 - 0.5 * t * t; // flash hot-spot, dark corners
-      const i = (y * w + x) * 4;
-      d[i] = clamp(curve[d[i]] * falloff);
-      d[i + 1] = clamp(curve[d[i + 1]] * falloff);
-      d[i + 2] = clamp(curve[d[i + 2]] * falloff);
+      let acc = b[x] * (r + 1);
+      for (let y = 1; y <= r; y++) acc += b[Math.min(y, h - 1) * w + x];
+      for (let y = 0; y < h; y++) {
+        a[y * w + x] = acc * norm;
+        acc += b[Math.min(y + r + 1, h - 1) * w + x] - b[Math.max(y - r, 0) * w + x];
+      }
     }
   }
-  ctx.putImageData(img, 0, 0);
+  return a;
 }
 
-/** Highlights bleed into their surroundings (halation on cheap paper). */
-export function bloom(ctx: Ctx, w: number, h: number, strength = 0.35) {
-  const k = 0.12;
-  const sw = Math.max(1, Math.round(w * k));
-  const sh = Math.max(1, Math.round(h * k));
-  const small = document.createElement("canvas");
-  small.width = sw;
-  small.height = sh;
-  const sctx = small.getContext("2d", { willReadFrequently: true })!;
-  sctx.drawImage(ctx.canvas, 0, 0, sw, sh);
-  const img = sctx.getImageData(0, 0, sw, sh);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-    const keep = lum > 185 ? (lum - 185) / 70 : 0;
-    d[i] *= keep;
-    d[i + 1] *= keep;
-    d[i + 2] *= keep;
+/** Value below which `p` of the samples fall (0..1 inputs). */
+function percentile(lum: Float32Array, p: number) {
+  const hist = new Uint32Array(1024);
+  for (let i = 0; i < lum.length; i++) hist[Math.min(1023, Math.max(0, Math.round(lum[i] * 1023)))]++;
+  const target = lum.length * p;
+  let acc = 0;
+  for (let i = 0; i < 1024; i++) {
+    acc += hist[i];
+    if (acc >= target) return i / 1023;
   }
-  sctx.putImageData(img, 0, 0);
-  ctx.save();
-  ctx.globalCompositeOperation = "screen";
-  ctx.globalAlpha = strength;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(small, 0, 0, w, h);
-  ctx.restore();
+  return 1;
 }
 
-/** Coarse silver grain, stronger in the mid-tones like real fast film. */
-export function heavyGrain(ctx: Ctx, w: number, h: number, amount = 26) {
+/** Strong S-curve: crushed toe, smooth shoulder, bright skin. */
+function boothCurve(x: number) {
+  const v = Math.min(1, Math.max(0, x)) ** 0.82; // flash: lift the mids (skin)
+  const k = 1.75;
+  const s = v < 0.5 ? 0.5 * (2 * v) ** k : 1 - 0.5 * (2 * (1 - v)) ** k;
+  return s;
+}
+
+/**
+ * Develops the photo in place into a booth print. Black & white uses a
+ * red-leaning channel mix (smooth, bright skin, like booth paper under flash);
+ * colour keeps the hues and applies the same tonal work to luminance.
+ */
+export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean) {
   const img = ctx.getImageData(0, 0, w, h);
   const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const lum = (d[i] + d[i + 1] + d[i + 2]) / 765;
-    const n = (Math.random() - 0.5) * amount * (0.4 + 2.4 * lum * (1 - lum));
-    d[i] = clamp(d[i] + n);
-    d[i + 1] = clamp(d[i + 1] + n);
-    d[i + 2] = clamp(d[i + 2] + n);
+  const n = w * h;
+  const lum = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+    lum[i] = (color ? 0.299 * r + 0.587 * g + 0.114 * b : 0.5 * r + 0.4 * g + 0.1 * b) / 255;
+  }
+  const orig = color ? lum.slice() : lum;
+
+  // 1. Full range: black point and white point from the image itself.
+  const lo = percentile(lum, 0.006);
+  const hi = Math.max(lo + 0.05, percentile(lum, 0.996));
+  for (let i = 0; i < n; i++) lum[i] = (lum[i] - lo) / (hi - lo);
+
+  // 2. Denoise + sharpen in one go: detail below a small threshold (sensor
+  // noise, skin texture) is smoothed away; real edges above it (eyelashes,
+  // hair strands, knit) are boosted. Sharpening without the threshold just
+  // turns webcam noise into crunchy speckle.
+  const fine = blurChannel(lum, w, h, Math.max(1, Math.round(w / 480)));
+  const T = 0.02; // noise floor
+  const KEEP = 0.4; // texture kept below it, so skin isn't waxy
+  const GAIN = 2; // sharpening above it
+  for (let i = 0; i < n; i++) {
+    const dlt = lum[i] - fine[i];
+    const a = Math.abs(dlt);
+    lum[i] = fine[i] + Math.sign(dlt) * (a < T ? a * KEEP : T * KEEP + (a - T) * GAIN);
+  }
+  // 3. Local contrast ("clarity"): separates faces from the background.
+  const big = blurChannel(lum, w, h, Math.max(2, Math.round(w * 0.035)));
+  for (let i = 0; i < n; i++) lum[i] += (lum[i] - big[i]) * 0.4;
+
+  // 4. Tone curve, 5. fine grain, gentle corner falloff.
+  const cx = w / 2;
+  const cy = h * 0.45;
+  const maxD = Math.hypot(w / 2, h * 0.55);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const t = Math.hypot(x - cx, y - cy) / maxD;
+      let v = boothCurve(lum[i]) * (1 - 0.16 * t * t * t);
+      v += (Math.random() - 0.5) * 0.024 * (0.35 + 2 * v * (1 - v));
+      v = Math.min(1, Math.max(0, v));
+      const p = i * 4;
+      if (color) {
+        // Same tonal change, applied additively so hues survive; slightly muted.
+        const delta = (v - orig[i]) * 255;
+        const r = d[p] + delta, g = d[p + 1] + delta, b = d[p + 2] + delta;
+        const m = (r + g + b) / 3;
+        d[p] = clamp(m + (r - m) * 0.9 + 4);
+        d[p + 1] = clamp(m + (g - m) * 0.9 + 1);
+        d[p + 2] = clamp(m + (b - m) * 0.9 - 3);
+      } else {
+        // Silver print: neutral highlights, a touch of warmth in the shadows.
+        const val = v * 255;
+        const warm = (1 - v) * 6;
+        d[p] = clamp(val + warm * 0.6);
+        d[p + 1] = clamp(val + warm * 0.2);
+        d[p + 2] = clamp(val - warm * 0.5);
+      }
+    }
   }
   ctx.putImageData(img, 0, 0);
 }
