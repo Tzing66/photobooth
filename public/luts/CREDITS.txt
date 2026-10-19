@@ -1,0 +1,9 @@
+Film simulation lookup tables
+
+These HaldCLUTs come from the RawTherapee Film Simulation collection by
+Pat David (https://patdavid.net/2015/03/film-emulation-in-rawtherapee/),
+licensed under Creative Commons Attribution-ShareAlike 4.0
+(https://creativecommons.org/licenses/by-sa/4.0/).
+
+Changes: resampled from level 12 (144-step cube) to level 8 (64-step cube)
+and renamed. These modified files are shared under the same licence.
