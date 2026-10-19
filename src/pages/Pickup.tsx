@@ -19,7 +19,7 @@ function sliceStrip(url: string): Promise<string[]> {
           c.width = img.width;
           c.height = h;
           c.getContext("2d")!.drawImage(img, 0, i * h, img.width, h, 0, 0, img.width, h);
-          return c.toDataURL("image/png");
+          return c.toDataURL("image/jpeg", 0.95);
         }),
       );
     };
@@ -65,7 +65,7 @@ export default function Pickup() {
           return;
         }
         setStrip(s);
-        toFile(s, "photostrip.png").then(setStripFile, () => null);
+        toFile(s, "photostrip.jpg").then(setStripFile, () => null);
       } catch (e) {
         console.error("Failed to load session", e);
         showError(navigate, "Loading Error", "Failed to load your photos and photostrip. Please try refreshing the page or start a new session.");
@@ -79,7 +79,7 @@ export default function Pickup() {
       const urls = saved.length === 4 ? saved : await sliceStrip(strip);
       setSingles(urls);
       setCut(true);
-      Promise.all(urls.map((u, i) => toFile(u, `photo-${i + 1}.png`))).then(setSingleFiles, () => null);
+      Promise.all(urls.map((u, i) => toFile(u, `photo-${i + 1}.jpg`))).then(setSingleFiles, () => null);
     } catch (e) {
       console.error("Failed to load single photos", e);
     }
@@ -113,7 +113,7 @@ export default function Pickup() {
   };
 
   const actions: [keyof typeof ICONS, () => void][] = [
-    ["download", () => saveImage(strip, "photostrip.png", stripFile)],
+    ["download", () => saveImage(strip, "photostrip.jpg", stripFile)],
     ["share", share],
     ["print", () => printStrip(strip)],
     ["restart", restart],
@@ -150,7 +150,7 @@ export default function Pickup() {
               <kit.IconButton kind="back" onClick={() => setCut(false)} />
             </div>
             {singles.map((s, i) => (
-              <button key={i} onClick={() => saveImage(s, `photo-${i + 1}.png`, singleFiles[i])} aria-label={`Download photo ${i + 1}`}>
+              <button key={i} onClick={() => saveImage(s, `photo-${i + 1}.jpg`, singleFiles[i])} aria-label={`Download photo ${i + 1}`}>
                 <img
                   src={s}
                   alt={`Photo ${i + 1}`}

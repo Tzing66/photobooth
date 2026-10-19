@@ -68,7 +68,7 @@ export default function Features() {
               {frameDef(open.frame as FrameType).name} · {fmt.format(open.createdAt)}
             </p>
             <div className="flex gap-2">
-              <button className="btn" onClick={() => saveImage(open.url, `photostrip-${open.createdAt}.png`, new File([open.strip], `photostrip-${open.createdAt}.png`, { type: open.strip.type || "image/png" }))}>
+              <button className="btn" onClick={() => saveImage(open.url, `photostrip-${open.createdAt}.jpg`, new File([open.strip], `photostrip-${open.createdAt}.jpg`, { type: open.strip.type || "image/jpeg" }))}>
                 download
               </button>
               <button className="btn" onClick={() => remove(open.id)}>

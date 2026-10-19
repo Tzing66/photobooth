@@ -11,7 +11,7 @@ import { blackAndWhite, boothPrint, dust, edgeBurn, filmColor, flashGlow } from 
 import { drawOverlay, ensureOverlayFonts, type Cell } from "./overlays";
 import { applyTexture, randomTexture } from "./textures";
 
-const S = 2; // render scale
+const S = 3; // render scale: 720×960 per photo, sharp on retina screens
 const CELL_W = 240 * S;
 const CELL_H = 320 * S;
 const SINGLE_H = 480 * S;
@@ -217,7 +217,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
   dust(ctx, width, height);
   if (def.overlay) drawOverlay(ctx, frame, { width, height, cells, s: S });
 
-  const result: StripResult = { strip: strip.toDataURL("image/png"), singles: [], layout: { width, height, cells } };
+  const result: StripResult = { strip: strip.toDataURL("image/jpeg", 0.95), singles: [], layout: { width, height, cells } };
   if (stripOnly) return result;
 
   // --- single prints ---
@@ -243,7 +243,7 @@ export async function createPhotostrip(images: string[], { frame, color, authent
     sctx.drawImage(develop(img, pw, ph, look, masks[i]), margin + sideExtra + shiftX, margin + captionSpace + shiftY);
     dust(sctx, w, h);
     if (def.caption) drawCaption(sctx, def.caption, w / 2, captionSpace / 2 + 5 * S, 25 * S);
-    result.singles.push(single.toDataURL("image/png"));
+    result.singles.push(single.toDataURL("image/jpeg", 0.95));
   }
   return result;
 }
