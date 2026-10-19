@@ -57,12 +57,57 @@ export const BACKDROPS: BackdropDef[] = [
   { type: "curtain", name: "Velvet curtain", swatch: "repeating-linear-gradient(90deg,#5a0f12 0 3px,#a8242a 3px 9px,#5a0f12 9px 12px)" },
 ];
 
+/**
+ * Film stocks for the authentic look. "booth" is our own tuned curve (the
+ * original authentic look); the rest are HaldCLUTs from Pat David's RawTherapee
+ * Film Simulation collection (CC BY-SA 4.0), in public/luts/.
+ */
+export type FilmType =
+  | "booth"
+  | "polaroid-667"
+  | "polaroid-665-3"
+  | "fuji-fp-3000b-hc"
+  | "ilford-hp5-plus-400"
+  | "kodak-tri-x-400-2"
+  | "rollei-ortho-25"
+  | "rollei-retro-80s"
+  | "fuji-fp-100c-3";
+
+export interface FilmDef {
+  type: FilmType;
+  name: string;
+  /** Which tone mode it belongs to; "both" shows in b&w and colour. */
+  mode: "bw" | "color" | "both";
+  lut?: string;
+}
+
+const lut = (slug: FilmType) => `${import.meta.env.BASE_URL}luts/${slug}.png`;
+
+export const FILMS: FilmDef[] = [
+  { type: "booth", name: "Booth (original)", mode: "both" },
+  { type: "polaroid-667", name: "Polaroid 667", mode: "bw", lut: lut("polaroid-667") },
+  { type: "polaroid-665-3", name: "Polaroid 665", mode: "bw", lut: lut("polaroid-665-3") },
+  { type: "fuji-fp-3000b-hc", name: "Fuji FP-3000B HC", mode: "bw", lut: lut("fuji-fp-3000b-hc") },
+  { type: "ilford-hp5-plus-400", name: "Ilford HP5", mode: "bw", lut: lut("ilford-hp5-plus-400") },
+  { type: "kodak-tri-x-400-2", name: "Kodak Tri-X", mode: "bw", lut: lut("kodak-tri-x-400-2") },
+  { type: "rollei-ortho-25", name: "Rollei Ortho", mode: "bw", lut: lut("rollei-ortho-25") },
+  { type: "rollei-retro-80s", name: "Rollei Retro 80s", mode: "bw", lut: lut("rollei-retro-80s") },
+  { type: "fuji-fp-100c-3", name: "Fuji FP-100C", mode: "color", lut: lut("fuji-fp-100c-3") },
+];
+
+export const filmsFor = (color: boolean) => FILMS.filter((f) => f.mode === "both" || f.mode === (color ? "color" : "bw"));
+
+/** The stock to use; one that doesn't fit the tone mode falls back to the original booth look. */
+export const filmDef = (t: FilmType, color: boolean) => filmsFor(color).find((f) => f.type === t) ?? FILMS[0];
+
 export const frameDef = (t: FrameType) => FRAMES.find((f) => f.type === t) ?? FRAMES[0];
 
 const FRAME_KEY = "photobooth_frame";
 const FILTER_KEY = "photobooth_filter";
 const LOOK_KEY = "photobooth_look";
 const BACKDROP_KEY = "photobooth_backdrop";
+const FILM_KEY = "photobooth_film";
+const FALLOFF_KEY = "photobooth_falloff";
 
 export function getFrame(): FrameType {
   const v = localStorage.getItem(FRAME_KEY);
@@ -84,7 +129,19 @@ export function getBackdrop(): BackdropType {
 }
 export const setBackdrop = (t: BackdropType) => localStorage.setItem(BACKDROP_KEY, t);
 
+export function getFilm(): FilmType {
+  const v = localStorage.getItem(FILM_KEY);
+  return FILMS.some((f) => f.type === v) ? (v as FilmType) : "booth";
+}
+export const setFilm = (t: FilmType) => localStorage.setItem(FILM_KEY, t);
+
+/** Flash falloff (darker room behind you); off by default. */
+export const isFalloff = () => localStorage.getItem(FALLOFF_KEY) === "on";
+export const setFalloff = (on: boolean) => localStorage.setItem(FALLOFF_KEY, on ? "on" : "off");
+
 export function resetSettings() {
+  localStorage.removeItem(FILM_KEY);
+  localStorage.removeItem(FALLOFF_KEY);
   localStorage.removeItem(FRAME_KEY);
   localStorage.removeItem(FILTER_KEY);
   localStorage.removeItem(LOOK_KEY);
