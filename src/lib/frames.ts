@@ -5,15 +5,10 @@ export type FrameType =
   | "white"
   | "cutout"
   | "hearts"
-  | "seasonal"
-  | "seasonal2"
-  | "birthday"
-  | "branded"
   | "stars"
   | "doodle"
   | "negative"
   | "contact"
-  | "disposable"
   | "scrapbook"
   | "ticket"
   | "pressed";
@@ -36,15 +31,10 @@ export const FRAMES: FrameDef[] = [
   { type: "white", name: "Classic White", background: "#d5d1cc" },
   { type: "cutout", name: "Heart Cutouts", background: "#d5d1cc", overlay: true },
   { type: "hearts", name: "Hearts", background: "#d5d1cc", overlay: true },
-  { type: "seasonal", name: "Valentine", background: "#ffdadd", caption: "HAPPY VALENTINE'S DAY" },
-  { type: "seasonal2", name: "Be Mine", background: "#ffdadd", caption: "be my valentine? ❤︎" },
-  { type: "birthday", name: "Birthday", background: "#d5d1cc", caption: "HAPPY BIRTHDAY" },
-  { type: "branded", name: "Photobooth", background: "#d5d1cc", caption: "PHOTOBOOTH · EST. 2026" },
   { type: "stars", name: "Stars", background: "black", overlay: true },
   { type: "doodle", name: "Doodles", background: "#d5d1cc", overlay: true },
   { type: "negative", name: "Film Negative", background: "#15120f", overlay: true, pad: { side: 30, top: 6, bottom: 6 } },
   { type: "contact", name: "Contact Sheet", background: "#0f0f0f", overlay: true, pad: { gap: 12, bottom: 14, top: 4 } },
-  { type: "disposable", name: "Disposable", background: "#f1eee6", overlay: true, pad: { bottom: 18 } },
   { type: "scrapbook", name: "Scrapbook", background: "#c6a47c", overlay: true, pad: { side: 6, gap: 8, bottom: 24, top: 6 } },
   { type: "ticket", name: "Ticket Stub", background: "#efe3c8", overlay: true, pad: { top: 34, bottom: 36, side: 8 } },
   { type: "pressed", name: "Pressed Flowers", background: "#ebe5d5", overlay: true, pad: { side: 10, gap: 6 } },

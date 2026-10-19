@@ -411,22 +411,6 @@ function contact(ctx: Ctx, L: StripLayout) {
   }, 1);
 }
 
-/** Disposable camera: glowing orange date stamp in each frame. */
-function disposable(ctx: Ctx, L: StripLayout) {
-  const s = L.s;
-  const { yy, mm, dd } = today();
-  const stamp = `'${yy} ${mm} ${dd}`;
-  for (const c of L.cells) {
-    ctx.save();
-    ctx.shadowColor = "#ff5a00";
-    ctx.shadowBlur = 6 * s;
-    ctx.globalAlpha = 0.92;
-    text(ctx, stamp, c.x + c.w - 10 * s, c.y + c.h - 12 * s, `700 ${12 * s}px ${MONO}`, "#ff9a2e", "right");
-    ctx.restore();
-  }
-  text(ctx, "SINGLE-USE CAMERA · 27 EXP · ISO 400", L.width / 2, L.height - 11 * s, `700 ${6 * s}px ${SANS}`, "#8a857b");
-}
-
 function tape(ctx: Ctx, x: number, y: number, angle: number, s: number) {
   const w = 74 * s;
   const h = 19 * s;
@@ -588,7 +572,6 @@ const OVERLAYS: Partial<Record<FrameType, (ctx: Ctx, L: StripLayout) => void>> =
   cutout,
   negative,
   contact,
-  disposable,
   scrapbook,
   ticket,
   pressed,
