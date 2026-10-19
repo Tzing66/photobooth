@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../components/Spinner";
 import {
@@ -29,24 +29,83 @@ interface Settings {
   backdrop: BackdropType;
 }
 
-/** Grab one frame from the front camera, then release it. */
-async function snapshot(): Promise<string> {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 720 }, height: { ideal: 960 }, facingMode: "user" } });
-  try {
-    const video = document.createElement("video");
-    video.muted = true;
-    video.playsInline = true;
-    video.srcObject = stream;
-    await video.play();
-    await new Promise((r) => setTimeout(r, 700)); // let auto-exposure settle
-    const c = document.createElement("canvas");
-    c.width = video.videoWidth;
-    c.height = video.videoHeight;
-    c.getContext("2d")!.drawImage(video, 0, 0);
-    return c.toDataURL("image/jpeg", 0.9);
-  } finally {
-    stream.getTracks().forEach((t) => t.stop());
-  }
+/**
+ * Opt-in preview snapshot: live mirror with a 3-2-1 countdown, one frame
+ * grabbed, camera released straight away.
+ */
+function LiveSnap({ onShot, onCancel, onError, height }: { onShot: (url: string) => void; onCancel: () => void; onError: () => void; height: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 720 }, height: { ideal: 960 }, facingMode: "user" } });
+        const video = videoRef.current;
+        if (cancelled || !video) return;
+        video.srcObject = stream;
+        await video.play();
+        // 3-2-1, then grab the frame (unmirrored, like the real shots).
+        [3, 2, 1].forEach((n, i) => timers.push(setTimeout(() => setCount(n), i * 1000)));
+        timers.push(
+          setTimeout(() => {
+            const c = document.createElement("canvas");
+            c.width = video.videoWidth;
+            c.height = video.videoHeight;
+            c.getContext("2d")!.drawImage(video, 0, 0);
+            onShot(c.toDataURL("image/jpeg", 0.9));
+          }, 3000),
+        );
+      } catch (e) {
+        console.warn("Preview camera unavailable", e);
+        if (!cancelled) onError();
+      }
+    })();
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [onShot, onError]);
+
+  return (
+    <div className="relative overflow-hidden rounded-md bg-black" style={{ height, aspectRatio: "3 / 4" }}>
+      <video ref={videoRef} muted playsInline className="h-full w-full -scale-x-100 object-cover" />
+      {count !== null && (
+        <span key={count} className="font-display absolute inset-0 grid animate-[countpop_1s_ease-out_forwards] place-items-center text-7xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+          {count}
+        </span>
+      )}
+      <button onClick={onCancel} className="btn absolute bottom-3 left-1/2 -translate-x-1/2 px-3! py-1! text-xs!">
+        cancel
+      </button>
+    </div>
+  );
+}
+
+/** Read a picked file, downscaled so previews stay quick. */
+function readPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 1400 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.9));
+    };
+    img.onerror = (e) => {
+      URL.revokeObjectURL(url);
+      reject(e);
+    };
+    img.src = url;
+  });
 }
 
 /** The top of the strip down to the middle of the first gap: one photo plus its frame. */
@@ -98,45 +157,57 @@ function GoButtons({ onCamera, onUpload }: { onCamera: () => void; onUpload: () 
 }
 
 /**
- * Choose frame, backdrop, tone and look against a big live preview of your own
- * face (one quiet camera snapshot), then go shoot or upload.
+ * Choose frame, backdrop, tone and look against a big preview, then go shoot
+ * or upload. The preview starts on sample portraits; the camera is only used
+ * if you ask ("try it on me"), or you can preview on one of your own photos.
  */
 export default function Setup() {
   const navigate = useNavigate();
   const { kit } = useTheme();
   const [s, setS] = useState<Settings>(() => ({ frame: getFrame(), color: isColorMode(), authentic: isAuthentic(), backdrop: getBackdrop() }));
-  const [subject, setSubject] = useState<string[] | null>(null);
-  const [usingFace, setUsingFace] = useState(false);
+  const [subject, setSubject] = useState<string[]>(placeholderPortraits);
+  const [source, setSource] = useState<"samples" | "camera" | "photo">("samples");
+  const [snapping, setSnapping] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<{ strip: string; zoom: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const renderId = useRef(0);
 
-  const takeSnapshot = useCallback(async () => {
-    try {
-      setNote("Taking a preview snapshot…");
-      const shot = await snapshot();
-      setSubject([shot, shot, shot, shot]);
-      setUsingFace(true);
-      setNote(null);
-    } catch (e) {
-      console.warn("Preview snapshot unavailable", e);
-      setSubject(placeholderPortraits());
-      setUsingFace(false);
-      setNote("Camera unavailable, previewing with sample portraits.");
-    }
+  const onShot = useCallback((url: string) => {
+    setSubject([url, url, url, url]);
+    setSource("camera");
+    setSnapping(false);
+    setNote(null);
   }, []);
+  const onSnapError = useCallback(() => {
+    setSnapping(false);
+    setNote("Couldn't open the camera. Check camera permission, or use a photo instead.");
+  }, []);
+  const onSnapCancel = useCallback(() => setSnapping(false), []);
 
-  const started = useRef(false);
-  useEffect(() => {
-    if (started.current) return; // StrictMode double-mount: one camera prompt only
-    started.current = true;
-    takeSnapshot();
-  }, [takeSnapshot]);
+  const onPickPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const url = await readPhoto(file);
+      setSubject([url, url, url, url]);
+      setSource("photo");
+      setNote(null);
+    } catch (err) {
+      console.error("Couldn't read photo", err);
+      setNote("That image couldn't be opened. Try a JPEG or PNG.");
+    }
+  };
+
+  const useSamples = () => {
+    setSubject(placeholderPortraits());
+    setSource("samples");
+  };
 
   // Re-render the preview whenever a setting or the subject changes; only the latest render wins.
   useEffect(() => {
-    if (!subject) return;
     const id = ++renderId.current;
     setBusy(true);
     const t = setTimeout(async () => {
@@ -189,27 +260,44 @@ export default function Setup() {
         {/* preview */}
         <section aria-label="Preview" className="flex min-w-0 flex-col items-center gap-2 md:sticky md:top-4">
           <div className="relative flex items-start justify-center gap-4 sm:gap-6">
-            {preview ? (
-              <>
-                <img src={preview.zoom} alt="Close-up of one photo" className={`h-auto w-auto rotate-[-1.5deg] ${shadow}`} style={{ maxHeight: previewH, maxWidth: "min(58vw, 26rem)" }} />
-                <img src={preview.strip} alt="Full strip" className={`w-auto rotate-[1.5deg] ${shadow}`} style={{ height: previewH }} />
-              </>
+            {snapping ? (
+              <LiveSnap onShot={onShot} onCancel={onSnapCancel} onError={onSnapError} height={previewH} />
+            ) : preview ? (
+              <img src={preview.zoom} alt="Close-up of one photo" className={`h-auto w-auto rotate-[-1.5deg] ${shadow}`} style={{ maxHeight: previewH, maxWidth: "min(58vw, 26rem)" }} />
             ) : (
-              <div className="grid place-items-center" style={{ height: previewH, width: "min(80vw, 30rem)" }}>
+              <div className="grid place-items-center" style={{ height: previewH, width: "min(58vw, 26rem)" }}>
                 <Spinner />
               </div>
             )}
-            {busy && preview && (
+            {preview && <img src={preview.strip} alt="Full strip" className={`w-auto rotate-[1.5deg] ${shadow}`} style={{ height: previewH }} />}
+            {busy && preview && !snapping && (
               <div className="absolute inset-0 grid place-items-center">
                 <Spinner className="h-10 w-10" />
               </div>
             )}
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted">
-            <span>{usingFace ? "Previewing with your face" : "Previewing with sample portraits"}</span>
-            <button onClick={takeSnapshot} className="link">
-              {usingFace ? "retake preview" : "use my camera"}
+          <p className="text-xs text-muted">
+            {{ samples: "Previewing on sample portraits", camera: "Previewing on you", photo: "Previewing on your photo" }[source]}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button className="chip" onClick={() => setSnapping(true)} disabled={snapping}>
+              <span className="chip-swatch grid place-items-center text-sm" aria-hidden>
+                📷
+              </span>
+              {source === "camera" ? "retake" : "try it on me"}
             </button>
+            <button className="chip" onClick={() => fileRef.current?.click()}>
+              <span className="chip-swatch grid place-items-center text-sm" aria-hidden>
+                🖼
+              </span>
+              use a photo
+            </button>
+            {source !== "samples" && (
+              <button className="link text-xs" onClick={useSamples}>
+                back to samples
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
           </div>
           {note && <p className="text-center text-xs text-muted">{note}</p>}
         </section>
