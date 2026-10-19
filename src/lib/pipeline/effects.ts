@@ -223,6 +223,18 @@ function boothCurve(x: number) {
   return s;
 }
 
+/** Sepia-toned silver print: deep brown shadows, warm mids, cream highlights. */
+const SEPIA: [number, number, number][] = [
+  [16, 10, 6],
+  [124, 88, 58],
+  [238, 222, 196],
+];
+function sepiaTone(v: number): [number, number, number] {
+  const [a, b] = v < 0.5 ? [SEPIA[0], SEPIA[1]] : [SEPIA[1], SEPIA[2]];
+  const t = v < 0.5 ? v * 2 : (v - 0.5) * 2;
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
+
 /**
  * Develops the photo in place into a booth print. Black & white uses a
  * near-neutral channel mix with a slight red lean, so every skin tone keeps
@@ -231,9 +243,10 @@ function boothCurve(x: number) {
  *
  * With a film `lut`, the stock does the tone and colour instead of our curve:
  * the range is stretched on RGB, the photo goes through the LUT, then gets
- * the same sharpening, local contrast and grain.
+ * the same sharpening, local contrast and grain. `sepia` tones a B&W print
+ * brown.
  */
-export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean, lut?: Lut) {
+export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean, lut?: Lut, sepia = false) {
   const img = ctx.getImageData(0, 0, w, h);
   const d = img.data;
   const n = w * h;
@@ -302,6 +315,11 @@ export function boothPrint(ctx: Ctx, w: number, h: number, color: boolean, lut?:
         d[p] = clamp(m + (r - m) * 0.9 + 4);
         d[p + 1] = clamp(m + (g - m) * 0.9 + 1);
         d[p + 2] = clamp(m + (b - m) * 0.9 - 3);
+      } else if (sepia) {
+        const [r, g, b] = sepiaTone(v);
+        d[p] = r;
+        d[p + 1] = g;
+        d[p + 2] = b;
       } else {
         // Silver print: neutral highlights, a touch of warmth in the shadows.
         const val = v * 255;
