@@ -1,19 +1,28 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../components/Spinner";
+import { FlipIcon } from "../components/CameraIcons";
+import { getFacing, hasSeveralCameras, isMirrored, openCamera, setFacing, type Facing } from "../lib/camera";
 import {
   BACKDROPS,
   FRAMES,
   type BackdropType,
+  type FilmType,
   type FrameType,
+  filmDef,
+  filmsFor,
   getBackdrop,
+  getFilm,
   getFrame,
   isAuthentic,
   isColorMode,
+  isFalloff,
   needsShadow,
   setAuthentic,
   setBackdrop,
   setColorMode,
+  setFalloff,
+  setFilm,
   setFrame,
 } from "../lib/frames";
 import { placeholderPortraits } from "../lib/pipeline/samples";
@@ -27,6 +36,8 @@ interface Settings {
   color: boolean;
   authentic: boolean;
   backdrop: BackdropType;
+  film: FilmType;
+  falloff: boolean;
 }
 
 /**
@@ -36,17 +47,21 @@ interface Settings {
 function LiveSnap({ onShot, onCancel, onError, height }: { onShot: (url: string) => void; onCancel: () => void; onError: () => void; height: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [count, setCount] = useState<number | null>(null);
+  const [facing, setFacingState] = useState<Facing>(getFacing);
+  const [cam, setCam] = useState({ mirrored: true, several: false });
 
   useEffect(() => {
     let stream: MediaStream | null = null;
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    setCount(null);
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1440 }, facingMode: "user" } });
+        stream = await openCamera(facing);
         const video = videoRef.current;
         if (cancelled || !video) return;
         video.srcObject = stream;
+        setCam({ mirrored: isMirrored(stream), several: await hasSeveralCameras() });
         await video.play();
         // 3-2-1, then grab the frame (unmirrored, like the real shots).
         [3, 2, 1].forEach((n, i) => timers.push(setTimeout(() => setCount(n), i * 1000)));
@@ -69,11 +84,22 @@ function LiveSnap({ onShot, onCancel, onError, height }: { onShot: (url: string)
       timers.forEach(clearTimeout);
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [onShot, onError]);
+  }, [onShot, onError, facing]);
+
+  const flip = () => {
+    const next = facing === "user" ? "environment" : "user";
+    setFacing(next);
+    setFacingState(next);
+  };
 
   return (
     <div className="relative overflow-hidden rounded-md bg-black" style={{ height, aspectRatio: "3 / 4" }}>
-      <video ref={videoRef} muted playsInline className="h-full w-full -scale-x-100 object-cover" />
+      <video ref={videoRef} muted playsInline className={`h-full w-full object-cover ${cam.mirrored ? "-scale-x-100" : ""}`} />
+      {cam.several && (
+        <button onClick={flip} className="cam-btn absolute top-2 left-2" aria-label={facing === "user" ? "Switch to back camera" : "Switch to front camera"}>
+          <FlipIcon />
+        </button>
+      )}
       {count !== null && (
         <span key={count} className="font-display absolute inset-0 grid animate-[countpop_1s_ease-out_forwards] place-items-center text-7xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
           {count}
@@ -164,7 +190,7 @@ function GoButtons({ onCamera, onUpload }: { onCamera: () => void; onUpload: () 
 export default function Setup() {
   const navigate = useNavigate();
   const { kit } = useTheme();
-  const [s, setS] = useState<Settings>(() => ({ frame: getFrame(), color: isColorMode(), authentic: isAuthentic(), backdrop: getBackdrop() }));
+  const [s, setS] = useState<Settings>(() => ({ frame: getFrame(), color: isColorMode(), authentic: isAuthentic(), backdrop: getBackdrop(), film: getFilm(), falloff: isFalloff() }));
   const [subject, setSubject] = useState<string[]>(placeholderPortraits);
   const [source, setSource] = useState<"samples" | "camera" | "photo">("samples");
   const [snapping, setSnapping] = useState(false);
@@ -212,8 +238,17 @@ export default function Setup() {
     setBusy(true);
     const t = setTimeout(async () => {
       try {
-        if (s.backdrop !== "none") setNote((n) => n ?? "Loading the cut-out model (first time only)…");
-        const result = await createPhotostrip(subject, { frame: s.frame, color: s.color, authentic: s.authentic, backdrop: s.backdrop, stripOnly: true });
+        if (s.backdrop !== "none" || (s.authentic && s.falloff && source !== "samples")) setNote((n) => n ?? "Loading the cut-out model (first time only)…");
+        const result = await createPhotostrip(subject, {
+          frame: s.frame,
+          color: s.color,
+          authentic: s.authentic,
+          backdrop: s.backdrop,
+          film: s.film,
+          // the cut-out model can't find a person in the grey silhouettes
+          flash: s.falloff && source !== "samples",
+          stripOnly: true,
+        });
         const zoom = await zoomOnFirst(result);
         if (id !== renderId.current) return;
         setPreview({ strip: result.strip, zoom });
@@ -226,7 +261,7 @@ export default function Setup() {
       }
     }, 120);
     return () => clearTimeout(t);
-  }, [subject, s]);
+  }, [subject, s, source]);
 
   const update = (patch: Partial<Settings>) => {
     const next = { ...s, ...patch };
@@ -235,7 +270,9 @@ export default function Setup() {
     setColorMode(next.color);
     setAuthentic(next.authentic);
     setBackdrop(next.backdrop);
-    if (patch.backdrop && patch.backdrop !== "none") preloadSegmenter().catch(() => null);
+    setFilm(next.film);
+    setFalloff(next.falloff);
+    if ((patch.backdrop && patch.backdrop !== "none") || patch.falloff) preloadSegmenter().catch(() => null);
   };
 
   const go = (path: string) => async () => {
@@ -332,6 +369,26 @@ export default function Setup() {
             <kit.Toggle on={s.color} onToggle={() => update({ color: !s.color })} left="b&w" right="color" label="Toggle colour mode" />
             <kit.Toggle on={s.authentic} onToggle={() => update({ authentic: !s.authentic })} left="normal" right="authentic" label="Toggle authentic booth look" />
           </div>
+
+          {s.authentic && (
+            <div>
+              <h2 className="font-display mb-2 text-sm md:text-base">Film</h2>
+              <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
+                {filmsFor(s.color).map((f) => (
+                  <button key={f.type} className="chip px-3!" aria-pressed={filmDef(s.film, s.color).type === f.type} onClick={() => update({ film: f.type })}>
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3">
+                <kit.Toggle on={s.falloff} onToggle={() => update({ falloff: !s.falloff })} left="room light" right="flash look" label="Toggle flash falloff" />
+              </div>
+              <p className="mt-1 text-xs text-muted">
+                Flash darkens the room behind you, like a booth flash a foot from your face.
+                {source === "samples" && " Try it on yourself or a photo to see it."}
+              </p>
+            </div>
+          )}
 
           <div className="bg-paper sticky bottom-0 -mx-5 -mb-5 hidden gap-3 rounded-b-[inherit] px-5 pt-3 pb-5 md:flex">
             <GoButtons onCamera={go("/takePicture")} onUpload={go("/upload")} />

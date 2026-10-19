@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { BACKDROPS, frameDef, getBackdrop, getFrame, isAuthentic, isColorMode } from "../lib/frames";
+import { BACKDROPS, filmDef, frameDef, getBackdrop, getFilm, getFrame, isAuthentic, isColorMode, isFalloff } from "../lib/frames";
 import { useTheme } from "../themes/ThemeContext";
 
 interface Props {
@@ -21,7 +21,7 @@ function Summary({ locked }: { locked: boolean }) {
   const parts = [
     frameDef(getFrame()).name,
     isColorMode() ? "Colour" : "B&W",
-    isAuthentic() ? "Authentic" : "Normal",
+    ...(isAuthentic() ? [filmDef(getFilm(), isColorMode()).name, ...(isFalloff() ? ["Flash"] : [])] : ["Normal"]),
     ...(backdrop === "none" ? [] : [BACKDROPS.find((b) => b.type === backdrop)!.name]),
   ];
   return (
